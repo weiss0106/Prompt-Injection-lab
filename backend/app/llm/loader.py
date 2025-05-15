@@ -1,50 +1,70 @@
 #llm model loader
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 import torch
 import os
+from accelerate import init_empty_weights, load_checkpoint_and_dispatch
+import requests
 
 # Cache directory for models
 os.makedirs("model_cache", exist_ok=True)
 
 class LLMEngine:
-    def __init__(self, model_name ="meta-llama/llama-2-7b-chat-hf"):
-        self.model_name = model_name
-        self.tokenizer = None
-        self.model = None
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+    _instance = None
+    # _model = None
+    # _tokenizer = None
+    max_tokens=64
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(LLMEngine, cls).__new__(cls)
+        return cls._instance
     
+    def __init__(self, model_name="llama2"):
+        # Only initialize once
+        if not hasattr(self, 'initialized'):
+            self.model_name = model_name
+            # self.tokenizer = None
+            # self.model = None
+            # self.device = "cuda" if torch.cuda.is_available() else "cpu"
+            self.initialized = True
+            # self.model_server_url = "http://localhost:8080/generate"
+            self.ollama_api_url = "http://localhost:11434/api/generate"
+            
     def load_model(self):
-        """
-        Load the model and tokenizer.
-        Returns:
-            bool: True if the model is loaded successfully, False otherwise.
-        """
-        print(f"Loading model {self.model_name} on {self.device}...")
-        # Load the tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, cache_dir="model_cache")
+        try:
+            response = requests.get("http://localhost:11434/api/tags")
+            if response.status_code == 200:
+                models = response.json().get("models", [])
+                models_list = [model.get("name") for model in models]
+                if self.model_name not in models_list:
+                    print(f"Warning: Model is not available in Ollama")
+                    print(f"Available Models:{models_list}")
+                    print(f"Try to use 'ollama pull {self.model_name}'")
+                return True
+            return False
+        except Exception as e:
+            print(f"Cannot connect to Ollama:{str(e)}")
+            print("Please confirm the Ollama server is running")
+            return False
         
-        # Load the model
-        self.model = AutoModelForCausalLM.from_pretrained(self.model_name,torch_dtype = torch.float16 if self.device == "cuda" else torch.float32, cache_dir="model_cache").to(self.device)
-        
-        print("Model loaded successfully.")
-        return True
-    
-    def generate_response(self,prompt,max_length=512):
-        """ 
-        Generate model response and return
-
-        Args:
-            prompt (str): The input prompt for the model.
-            max_length (int): The maximum length of the generated response.
-        Returns:
-            str: The generated response from the model.
-        """
-        if not self.model or not self.tokenizer:
-            self.load_model()
-
-        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
-        outputs = self.model.generate(**inputs, max_length=max_length,temperature=0.7,top_p=0.9, do_sample=True)
-        response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-        return response[len(prompt):]  # Return only the generated part, excluding the prompt
+    def generate_response(self, prompt):
+        try:
+            data={
+                "model":self.model_name,
+                "prompt": prompt,
+                "stream": False,
+                "options":{
+                    "temperature":0.7,
+                    "top_p":0.9,
+                    "max_tokens":self.max_tokens
+                }
+            }
+            response = requests.post(self.ollama_api_url,json=data)
+            if response.status_code == 200:
+                result = response.json()
+                return result.get("response","")
+            else:
+                return f"Error:{response.status_code}-{response.text}"
+        except Exception as e:
+            return f"Connection error: {str(e)}"
+            
     

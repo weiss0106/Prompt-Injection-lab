@@ -1,10 +1,25 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.routes import llmapi, attacker
+import requests
 
 app = FastAPI(title="Prompt Injection Lab")
 
+# 添加CORS中间件
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+# 检查 Ollama 服务是否运行
+try:
+    response = requests.get("http://localhost:11434/api/tags")
+    if response.status_code != 200:
+        print("Warning: Ollama failed")
+except Exception:
+    print("Warning: Ollama is unavailable,please try ollama serve to restart")
+
+# 注册路由
+app.include_router(llmapi.router)
+app.include_router(attacker.router)
 
 @app.get("/")
 def read_root():
@@ -12,5 +27,5 @@ def read_root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app,host='0.0.0.00', port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=8001)
 
