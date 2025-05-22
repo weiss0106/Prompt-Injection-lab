@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import llmapi, attacker
-import requests
+from app.llm.loader import LLMEngine
 
 app = FastAPI(title="Prompt Injection Lab")
 
@@ -9,13 +9,9 @@ app = FastAPI(title="Prompt Injection Lab")
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# 检查 Ollama 服务是否运行
-try:
-    response = requests.get("http://localhost:11434/api/tags")
-    if response.status_code != 200:
-        print("Warning: Ollama failed")
-except Exception:
-    print("Warning: Ollama is unavailable,please try ollama serve to restart")
+# 初始化和加载模型
+llm_engine = LLMEngine()
+llm_engine.load_model()  # 尝试加载模型
 
 # 注册路由
 app.include_router(llmapi.router)

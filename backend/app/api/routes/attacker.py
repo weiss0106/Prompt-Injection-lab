@@ -34,16 +34,19 @@ async def process_challenge(challenge_id:str,request:PromptRequest):
     if not challenge:
         raise HTTPException(status_code=404,detail="Challenge not found")
     
-    result = await challenge.process_prompt(request.prompt)
-    
-    # Record result and update score
-    #TODO
-    
-    return {
-        "response":result.response,
-        "completed":result.completed
-    }  
-
+    try:
+        # 使用请求中的prompt参数
+        result = await challenge.process_prompt(request.prompt)
+        
+        # Record result and update score
+        #TODO
+        
+        return {
+            "response":result.response,
+            "completed":result.completed
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/score")
 async def get_attacker_score():
