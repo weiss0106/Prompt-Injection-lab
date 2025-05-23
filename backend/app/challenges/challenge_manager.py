@@ -39,6 +39,8 @@ class ChallengeManager:
         Load all challenges from the challenges directory
         """
         from .challenge1 import Challenge1
+        from .challenge2 import Challenge2
         
         self.register_challenge(Challenge1())
+        self.register_challenge(Challenge2())
         

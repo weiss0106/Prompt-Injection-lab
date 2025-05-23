@@ -53,7 +53,7 @@ class LLMEngine:
                 "prompt": prompt,
                 "stream": False,
                 "options":{
-                    "temperature":0.7,
+                    "temperature":1.3,
                     "top_p":0.9,
                     "max_tokens":self.max_tokens
                 }

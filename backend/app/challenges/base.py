@@ -13,6 +13,7 @@ class ChallengeType(Enum):
 
     DIRECT = "direct_injection"
     INDIRECT = "indirect_injection"
+    FINAL = "final_challenge"
 
 
 class DefenseType(Enum):
