@@ -1,9 +1,29 @@
 import { Box, Typography, Button, Card, CardContent, IconButton } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 export default function ModeSelectPage() {
   const navigate = useNavigate();
+  const [userScore, setUserScore] = useState({ attacker_score: 0, defender_score: 0 });
+  const isDefenceUnlocked = userScore.attacker_score > 1;
+
+  // 获取用户分数
+  useEffect(() => {
+    async function fetchUserScore() {
+      try {
+        const response = await fetch('http://localhost:8001/attacker/score');
+        if (response.ok) {
+          const data = await response.json();
+          setUserScore(data);
+        }
+      } catch (err) {
+        console.error('Error fetching user score:', err);
+      }
+    }
+    
+    fetchUserScore();
+  }, []);
 
   return (
     <Box
@@ -107,6 +127,11 @@ export default function ModeSelectPage() {
                 fontWeight: 'bold',
                 borderRadius: 2,
                 px: 3,
+                width: '100%',
+                '&:hover': {
+                  background: 'linear-gradient(to right, #c996ff, #a969c9)',
+                  boxShadow: '0 4px 8px rgba(187, 134, 252, 0.3)',
+                },
               }}
             >
               Continue
@@ -123,7 +148,7 @@ export default function ModeSelectPage() {
           borderRadius: 4,
           p: 2,
           textAlign: 'center',
-          opacity: 0.5,
+          opacity: isDefenceUnlocked ? 1 : 0.5,
           display: 'flex',
           flexDirection: 'column'
         }}>
@@ -137,23 +162,33 @@ export default function ModeSelectPage() {
               <Box sx={{ height: 460, background: '#3a3a4a', borderRadius: 2, mb: 2 }} />
               <Typography variant="h6" sx={{ color: '#fff', mb: 2, fontWeight: 600 }}>Defence Exercise</Typography>
             </Box>
-            <Box>
+            <Box sx={{ width: '100%' }}>
               <Button
                 variant="contained"
-                disabled
+                disabled={!isDefenceUnlocked}
+                onClick={isDefenceUnlocked ? () => navigate('/defencelist') : undefined}
                 sx={{
-                  background: 'linear-gradient(to right, #3a3a3a, #2a2a2a)',
+                  background: isDefenceUnlocked 
+                    ? 'linear-gradient(to right, #bb86fc, #9b59b6)' 
+                    : 'linear-gradient(to right, #3a3a3a, #2a2a2a)',
                   textTransform: 'none',
                   fontWeight: 'bold',
                   borderRadius: 2,
                   px: 3,
+                  width: '100%',
+                  '&:hover': isDefenceUnlocked ? {
+                    background: 'linear-gradient(to right, #c996ff, #a969c9)',
+                    boxShadow: '0 4px 8px rgba(187, 134, 252, 0.3)',
+                  } : {},
                 }}
               >
-                Locked
+                {isDefenceUnlocked ? "Start" : "Locked"}
               </Button>
-              <Typography variant="caption" sx={{ color: '#aaa', mt: 1, display: 'block' }}>
-                Finish the attack exercise to unlock this
-              </Typography>
+              {!isDefenceUnlocked && (
+                <Typography variant="caption" sx={{ color: '#aaa', mt: 1, display: 'block' }}>
+                  Finish the attack exercise to unlock this
+                </Typography>
+              )}
             </Box>
           </CardContent>
         </Card>

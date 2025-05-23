@@ -5,6 +5,8 @@ import CssBaseline from '@mui/material/CssBaseline';
 import HomePage from './pages/HomePage';
 import ModeSelectPage from './pages/ModeSelectPage';
 import AttackPage from './pages/AttackPage';
+import DefenceList from './pages/DefenceList';
+import DefencePage from './pages/DefencePage';
 
 const theme = createTheme({
   palette: {
@@ -63,6 +65,8 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/modes" element={<ModeSelectPage />} />
         <Route path="/attack" element={<AttackPage />} />
+        <Route path="/defencelist" element={<DefenceList />} />
+        <Route path="/defence" element={<DefencePage />} />
       </Routes>
     </ThemeProvider>
   );

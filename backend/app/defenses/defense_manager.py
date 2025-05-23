@@ -91,13 +91,22 @@ class DefenseManager():
         if plugin_name not in self.plugins:
             return False
         
-        self.plugins[plugin_name].enabled = not self.plugins[plugin_name].enabled
+        # if the plugin is not active, disable all plugins
+        current_status = self.plugins[plugin_name].is_active
+        if not current_status:  # if the current is not active, disable all plugins
+            # disable all plugins
+            for name, plugin in self.plugins.items():
+                if plugin.is_active:
+                    plugin.is_active = False
+        
+        # toggle the current plugin status
+        self.plugins[plugin_name].is_active = not self.plugins[plugin_name].is_active
         return True
     
     def delete_plugin(self,plugin_name:str)-> bool:
         """Delete a plugin"""
         try:
-            if plugin_name not in self.plugins:
+            if plugin_name in self.plugins:
                 del self.plugins[plugin_name]
             file_path = os.path.join(self.plugins_dir,f"{plugin_name}.py")
             if os.path.exists(file_path):
