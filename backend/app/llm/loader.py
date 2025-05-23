@@ -18,7 +18,7 @@ class LLMEngine:
             cls._instance = super(LLMEngine, cls).__new__(cls)
         return cls._instance
     
-    def __init__(self, model_name="llama2"):
+    def __init__(self, model_name="llama3.2:1b"):
         # Only initialize once
         if not hasattr(self, 'initialized'):
             self.model_name = model_name

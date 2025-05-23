@@ -1,12 +1,12 @@
 from app.api.routes.llmapi import PromptRequest
-from fastapi import APIRouter,Depends,HTTPException
-from typing import List,Dict,Any
-from app.api.routes.llmapi import PromptRequest
-from app.challenges.manager import ChallengeManager
+from fastapi import APIRouter,HTTPException
+from app.challenges.challenge_manager import ChallengeManager
+from app.models.score import ScoreManager
 
 router = APIRouter(prefix="/attacker",tags=["attacker"])
 challenge_manager = ChallengeManager()
 challenge_manager.load_challenges()
+score_manager = ScoreManager()
 
 @router.get("/")
 async def get_all_challenges():
@@ -14,6 +14,14 @@ async def get_all_challenges():
     Get all challenges
     """
     return challenge_manager.get_all_challenges()
+
+@router.get("/score")
+async def get_attacker_score():
+    """
+    Get attacker score
+    """
+    scores = score_manager.get_scores()
+    return scores.model_dump()
 
 @router.get("/{challenge_id}")
 async def get_challenge(challenge_id:str):
@@ -37,22 +45,28 @@ async def process_challenge(challenge_id:str,request:PromptRequest):
     result = await challenge.process_prompt(request.prompt)
     
     # Record result and update score
-    #TODO
+    # if result.completed:
+    #     score_manager.increment_attacker_score()
+    #     return {"message":"Challenge completed successfully!","score":score_manager.get_scores()}
+    # # else:
+    #     score_manager.increment_defender_score()only when the defenses are active, the defender score will be incremented
     
     return {
         "response":result.response,
-        "completed":result.completed
+        #"completed":result.completed
     }  
 
-
-@router.get("/score")
-async def get_attacker_score():
+@router.post("/{challenge_id}/validate_key")
+async def validate_key(challenge_id:str,key:str):
     """
-    Get attacker score
+    Validate a key for a challenge
     """
-    #TODO
-    return {
-        "score":0,
-        "total_challenges":0,
-        "completed_challenges":0
-    }
+    challenge = challenge_manager.get_challenge(challenge_id)
+    if not challenge:
+        raise HTTPException(status_code=404,detail="Challenge not found")
+    if challenge.validate_key(key):
+        score_manager.increment_attacker_score()
+        return {"message":"Key validated successfully!","score":score_manager.get_scores()}
+    else:
+        raise HTTPException(status_code=401,detail="Invalid key")
+        

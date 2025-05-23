@@ -1,0 +1,6 @@
+venv/
+*.dylib
+.cursor/rules
+__pycache__/
+model_cache/
+*.log

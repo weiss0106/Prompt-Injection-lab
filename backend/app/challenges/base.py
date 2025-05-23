@@ -31,10 +31,10 @@ class ChallengeResponse(BaseModel):
     """
     Challenge Response
     """
-    response:str
-    success:bool = True
-    completed:bool = False
-    secret_key:Optional[Dict[str,Any]] = None
+    response: str
+    success: bool = True
+    completed: bool = False
+    secret_key: Optional[str] = None
 
 class Challenge(abc.ABC):
     """
@@ -148,14 +148,20 @@ class Challenge(abc.ABC):
         """
         self.active_defenses = [d for d in self.active_defenses if d != defense]
 
-    def handle_error(self,error:Exception)->str:
+    # def handle_error(self,error:Exception)->str:
+    #     """
+    #     Handle an error
+    #     """
+    #     return ChallengeResponse(
+    #         response=str(error),
+    #         success=False,
+    #         error=str(error)
+    #     )
+    
+    def validate_key(self,key:str)->bool:
         """
-        Handle an error
+        Validate the key
         """
-        return ChallengeResponse(
-            response=str(error),
-            success=False,
-            error=str(error)
-        )
+        return key == self._key
     
     

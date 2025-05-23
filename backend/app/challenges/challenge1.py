@@ -40,7 +40,3 @@ class Challenge1(Challenge):
             )
         except Exception as e:
             return self.handle_error(e)
-
-    
-    
-        
