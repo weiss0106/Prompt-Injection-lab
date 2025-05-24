@@ -1,12 +1,15 @@
-import { Box, Typography, IconButton, TextField, Button, CircularProgress, Divider, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText, Radio, FormControlLabel, RadioGroup } from '@mui/material';
+import { Box, Typography, IconButton, TextField, Button, CircularProgress, Divider, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText, Switch, Menu, MenuItem, List, ListItem, ListItemText, ListItemSecondaryAction, Radio, FormControlLabel, RadioGroup } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useState, useEffect } from 'react';
 
 export default function DefencePage() {
   const navigate = useNavigate();
-  const [code, setCode] = useState(`from app.defenses.base import DefensePlugin
+  const [code, setCode] = useState('');
+  const [defaultTemplate] = useState(`from app.defenses.base import DefensePlugin
+from app.defenses.base import DefenseType
 
 class CustomDefensePlugin(DefensePlugin):
     """
@@ -19,7 +22,7 @@ class CustomDefensePlugin(DefensePlugin):
         self.config = {
             "blocked_keywords": ["hack", "system", "prompt", "secret"]
         }
-        self.defense_type = DefenseType.NONE #Compulsory field
+        self.defense_type = DefenseType.NONE  # Compulsory field
         self.is_active = False
     
     def process_prompt(self, prompt: str) -> str:
@@ -42,9 +45,13 @@ class CustomDefensePlugin(DefensePlugin):
         """
         return True
         
-    def process_output(self,output:str)->str:
+    def process_output(self, output: str) -> str:
         """
         Process the output
+        Args:
+            output: The output to process
+        Returns:
+            The processed output
         """
         return output`);
             
@@ -62,6 +69,12 @@ class CustomDefensePlugin(DefensePlugin):
   const [snackbarSeverity, setSnackbarSeverity] = useState('info'); // Snackbar类型
   const [deployDialogOpen, setDeployDialogOpen] = useState(false); // 部署确认对话框开关
   const [pluginToActivate, setPluginToActivate] = useState(null); // 要激活的插件
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null); // 菜单锚点
+  const [activePluginForMenu, setActivePluginForMenu] = useState(null); // 当前菜单对应的插件
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // 是否有未保存的更改
+  const [originalCode, setOriginalCode] = useState(''); // 原始代码，用于检测更改
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false); // 确认对话框开关
+  const [pendingAction, setPendingAction] = useState(null); // 等待确认的操作
 
   // 获取所有插件
   const fetchPlugins = async () => {
@@ -71,10 +84,9 @@ class CustomDefensePlugin(DefensePlugin):
         const data = await response.json();
         setPlugins(data);
         
-        // 找出当前激活的插件
-        const activePlugin = data.find(plugin => plugin.info?.is_active);
-        if (activePlugin) {
-          setSelectedPlugin(activePlugin.name);
+        // 只在首次加载且没有选中插件时，自动选择第一个
+        if (data.length > 0 && !selectedPlugin && document.readyState === 'complete' && !hasUnsavedChanges) {
+          setSelectedPlugin(data[0].name);
         }
         
         console.log("Plugins fetched:", data); // 添加日志以便调试
@@ -90,6 +102,78 @@ class CustomDefensePlugin(DefensePlugin):
   useEffect(() => {
     fetchPlugins();
   }, []);
+
+  // 当选择插件时，加载其代码
+  useEffect(() => {
+    if (selectedPlugin && plugins.length > 0) {
+      // 检查选中的插件是否存在于列表中
+      const pluginExists = plugins.some(p => p.name === selectedPlugin);
+      if (pluginExists) {
+        fetchPluginCode(selectedPlugin);
+      } else {
+        // 如果选中的插件不存在于列表中，清除选择
+        setSelectedPlugin(null);
+      }
+    }
+  }, [selectedPlugin]);
+
+  // 获取插件代码
+  const fetchPluginCode = async (pluginName) => {
+    if (!pluginName) {
+      console.error('fetchPluginCode called with empty pluginName');
+      return;
+    }
+    
+    console.log(`Fetching code for plugin: ${pluginName}`);
+    
+    try {
+      // 从插件目录中读取文件内容
+      const encodedName = encodeURIComponent(pluginName.trim());
+      const response = await fetch(`http://localhost:8001/defender/defenses/${encodedName}`);
+      if (response.ok) {
+        const data = await response.json();
+        
+        // 尝试获取插件代码
+        try {
+          const codeResponse = await fetch(`http://localhost:8001/defender/defenses/${encodedName}/code`);
+          if (codeResponse.ok) {
+            const codeData = await codeResponse.json();
+            if (codeData.code) {
+              console.log(`Code loaded for plugin: ${pluginName}, code length: ${codeData.code.length}`);
+              setCode(codeData.code);
+              setOriginalCode(codeData.code);
+              setHasUnsavedChanges(false);
+              
+              // 更新插件列表中的信息
+              setPlugins(prevPlugins => {
+                const updatedPlugins = [...prevPlugins];
+                const index = updatedPlugins.findIndex(p => p.name === pluginName);
+                if (index !== -1) {
+                  updatedPlugins[index] = { ...updatedPlugins[index], ...data };
+                }
+                return updatedPlugins;
+              });
+              
+              return;
+            }
+          }
+          throw new Error(`Failed to fetch code for plugin: ${pluginName}`);
+        } catch (codeError) {
+          console.error('Error fetching plugin code:', codeError);
+          setCode('');
+          setOriginalCode('');
+          showSnackbar(`Error loading plugin code: ${codeError.message}`, 'error');
+        }
+      } else {
+        throw new Error(`Failed to fetch plugin info: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error fetching plugin:', error);
+      setCode('');
+      setOriginalCode('');
+      showSnackbar(`Error loading plugin: ${error.message}`, 'error');
+    }
+  };
 
   // 显示Snackbar通知
   const showSnackbar = (message, severity = 'info') => {
@@ -111,42 +195,59 @@ class CustomDefensePlugin(DefensePlugin):
     setIsUploading(true);
     
     try {
-      // 找出当前插件中的最大编号
-      // let maxPluginNumber = 0;
-      // plugins.forEach(plugin => {
-      //   // 假设插件名格式为 "defence_X" 或其它包含数字的格式
-      //   const match = plugin.name.match(/\d+/);
-      //   if (match) {
-      //     const num = parseInt(match[0], 10);
-      //     maxPluginNumber = Math.max(maxPluginNumber, num);
-      //   }
-      // });
-      
-      // // 新插件编号为最大编号+1
-      // const pluginNumber = maxPluginNumber + 1;
+      // 从代码中提取名称和描述
       const nameMatch = code.match(/self\.name\s*=\s*["']([^"']+)["']/);
-      const pluginName = nameMatch ? nameMatch[1] : 'custom_defense';
+      const descriptionMatch = code.match(/self\.description\s*=\s*["']([^"']+)["']/);
+      
+      // 获取新的插件名称
+      const newPluginName = nameMatch ? nameMatch[1].trim() : 'custom_defense';
+      const pluginDescription = descriptionMatch ? descriptionMatch[1].trim() : 'A custom defense plugin';
+      
+      // 检查是否是更新现有插件
+      const isUpdate = selectedPlugin && plugins.some(plugin => plugin.name === selectedPlugin);
+      
+      // 检查是否发生了重命名
+      const isRenaming = isUpdate && selectedPlugin !== newPluginName;
 
-      if(!pluginName){
+      if(!newPluginName) {
         showSnackbar('Please set a name for your plugin using self.name = "Your Plugin Name"', 'warning');
         setIsUploading(false);
         return;
       }
-      // 检查名称是否已经存在
-      if (plugins.some(plugin => plugin.name === pluginName)) {
-        showSnackbar(`Plugin name "${pluginName}" already exists. Please choose another name.`, 'error');
+      
+      // 如果是新插件或重命名，检查新名称是否已存在
+      if ((!isUpdate || isRenaming) && plugins.some(plugin => plugin.name === newPluginName)) {
+        showSnackbar(`Plugin name "${newPluginName}" already exists. Please choose another name.`, 'error');
         setIsUploading(false);
         return;
       }
+      
       // 创建文件对象
       const file = new Blob([code], { type: 'text/plain' });
       const formData = new FormData();
-      //const fileName = `defence_${pluginNumber}.py`;
-      const fileName = `${pluginName}.py`;
-      formData.append('file', file, fileName);
+      formData.append('file', file, 'defense_plugin.py');
       
-      // 上传插件
-      const response = await fetch('http://localhost:8001/defender/defenses/upload', {
+      // 如果是重命名，先删除旧插件
+      if (isRenaming) {
+        try {
+          const deleteResponse = await fetch(`http://localhost:8001/defender/defenses/${encodeURIComponent(selectedPlugin)}`, {
+            method: 'DELETE',
+          });
+          
+          if (!deleteResponse.ok) {
+            throw new Error('Failed to delete old plugin during rename');
+          }
+        } catch (error) {
+          showSnackbar(`Error during plugin rename: ${error.message}`, 'error');
+          setIsUploading(false);
+          return;
+        }
+      }
+      
+      // 上传插件（使用新名称）
+      const url = `http://localhost:8001/defender/defenses/upload?plugin_name=${encodeURIComponent(newPluginName)}`;
+      
+      const response = await fetch(url, {
         method: 'POST',
         body: formData,
       });
@@ -157,10 +258,74 @@ class CustomDefensePlugin(DefensePlugin):
       }
       
       const result = await response.json();
-      showSnackbar(`Plugin "${result.plugin_name}" uploaded successfully!`, 'success');
       
-      // 刷新插件列表
-      fetchPlugins();
+      // 更新本地状态
+      setPlugins(prevPlugins => {
+        const updatedPlugins = [...prevPlugins];
+        if (isRenaming) {
+          // 如果是重命名，删除旧插件并添加新插件
+          const oldIndex = updatedPlugins.findIndex(p => p.name === selectedPlugin);
+          if (oldIndex !== -1) {
+            updatedPlugins.splice(oldIndex, 1);
+          }
+          updatedPlugins.push({
+            name: newPluginName,
+            description: pluginDescription,
+            info: {
+              description: pluginDescription,
+              is_active: false
+            }
+          });
+        } else {
+          // 更新或添加插件
+          const index = updatedPlugins.findIndex(p => p.name === (isUpdate ? selectedPlugin : newPluginName));
+          if (index !== -1) {
+            // 更新现有插件
+            updatedPlugins[index] = {
+              ...updatedPlugins[index],
+              name: newPluginName,
+              description: pluginDescription,
+              info: {
+                ...updatedPlugins[index].info,
+                description: pluginDescription
+              }
+            };
+          } else {
+            // 添加新插件
+            updatedPlugins.push({
+              name: newPluginName,
+              description: pluginDescription,
+              info: {
+                description: pluginDescription,
+                is_active: false
+              }
+            });
+          }
+        }
+        return updatedPlugins;
+      });
+
+      // 更新选中的插件为新名称
+      setSelectedPlugin(newPluginName);
+      
+      showSnackbar(
+        isRenaming
+          ? `Plugin renamed from "${selectedPlugin}" to "${newPluginName}" successfully!`
+          : isUpdate
+            ? `Plugin "${newPluginName}" updated successfully!`
+            : `Plugin "${newPluginName}" uploaded successfully!`, 
+        'success'
+      );
+
+      // 重置未保存状态
+      setOriginalCode(code);
+      setHasUnsavedChanges(false);
+      
+      // 从后端获取最新的插件信息，但保持当前选中的插件
+      const currentSelected = newPluginName;  // 保存当前选中的插件名称
+      await fetchPlugins();
+      setSelectedPlugin(currentSelected);  // 重新设置选中的插件
+      
     } catch (error) {
       console.error('Upload error:', error);
       showSnackbar(`Error: ${error.message}`, 'error');
@@ -266,17 +431,23 @@ class CustomDefensePlugin(DefensePlugin):
     return plugin?.info?.is_active || false;
   };
 
+  // 检查插件是否处于激活状态
+  const isPluginActive = (pluginName) => {
+    const plugin = plugins.find(p => p.name === pluginName);
+    return plugin?.info?.is_active || false;
+  };
+
+  // 检查当前插件是否可编辑
+  const isCurrentPluginEditable = () => {
+    // 新建插件或未激活的已有插件可以编辑
+    return !selectedPlugin || (selectedPlugin && !isPluginActive(selectedPlugin));
+  };
+
   // 打开删除确认对话框
   const handleOpenDeleteDialog = (event, pluginName) => {
     event.stopPropagation(); // 阻止事件冒泡，避免触发选中插件
     setPluginToDelete(pluginName);
     setDeleteDialogOpen(true);
-  };
-
-  // 检查插件是否处于激活状态
-  const isPluginActive = (pluginName) => {
-    const plugin = plugins.find(p => p.name === pluginName);
-    return plugin?.info?.is_active || false;
   };
 
   // 关闭删除确认对话框
@@ -285,7 +456,44 @@ class CustomDefensePlugin(DefensePlugin):
     setPluginToDelete(null);
   };
 
-  // 删除插件
+  // 统一处理切换到其他插件的逻辑
+  const switchToPlugin = (pluginName, actionAfterSwitch = null, skipConfirmation = false) => {
+    const switchAction = () => {
+      setSelectedPlugin(pluginName);
+      if (pluginName) {
+        fetchPluginCode(pluginName);
+      }
+      if (actionAfterSwitch) {
+        actionAfterSwitch();
+      }
+    };
+
+    // 如果skipConfirmation为true，直接执行切换
+    if (skipConfirmation) {
+      switchAction();
+      return;
+    }
+
+    // 检查是否有未保存的更改
+    if ((hasUnsavedChanges && code.trim() !== originalCode.trim()) || 
+        (!selectedPlugin && code.trim() === defaultTemplate.trim())) {
+      setPendingAction({ action: switchAction, args: [] });
+      setConfirmDialogOpen(true);
+    } else {
+      switchAction();
+    }
+  };
+
+  // 处理选择插件
+  const handleSelectPlugin = (pluginName) => {
+    // Don't do anything if clicking the already selected plugin
+    if (pluginName === selectedPlugin) {
+      return;
+    }
+    switchToPlugin(pluginName);
+  };
+
+  // 处理删除插件
   const handleDeletePlugin = async () => {
     if (!pluginToDelete) return;
     
@@ -322,10 +530,113 @@ class CustomDefensePlugin(DefensePlugin):
     }
   };
 
+  // 打开菜单
+  const handleOpenMenu = (event, pluginName) => {
+    event.stopPropagation();
+    setMenuAnchorEl(event.currentTarget);
+    setActivePluginForMenu(pluginName);
+  };
+
+  // 关闭菜单
+  const handleCloseMenu = () => {
+    setMenuAnchorEl(null);
+    setActivePluginForMenu(null);
+  };
+
+  // 处理开关切换
+  const handleToggleSwitch = async (event, pluginName) => {
+    event.stopPropagation();
+
+    // 创建切换操作函数
+    const executeToggle = async () => {
+      setIsDeploying(true);
+      try {
+        // 先获取插件当前状态
+        const currentPlugin = plugins.find(p => p.name === pluginName);
+        const willBeActive = !currentPlugin?.info?.is_active;
+
+        const response = await fetch(`http://localhost:8001/defender/defenses/toggle?plugin_name=${pluginName}`, {
+          method: 'POST',
+        });
+        
+        if (!response.ok) {
+          let errorMessage;
+          try {
+            const error = await response.json();
+            errorMessage = error.detail || 'Failed to toggle plugin';
+          } catch (e) {
+            errorMessage = `HTTP error ${response.status}`;
+          }
+          throw new Error(errorMessage);
+        }
+
+        // 先刷新插件列表以获取最新状态
+        await fetchPlugins();
+        
+        // 如果切换的不是当前选中的插件，切换到该插件（跳过确认）
+        if (selectedPlugin !== pluginName) {
+          switchToPlugin(pluginName, null, true);
+        }
+        
+        showSnackbar(
+          willBeActive
+            ? `Plugin "${pluginName}" activated successfully!` 
+            : `Plugin "${pluginName}" deactivated successfully!`, 
+          'success'
+        );
+      } catch (error) {
+        console.error('Toggle error:', error);
+        try {
+          await fetchPlugins();
+        } catch (refreshError) {
+          console.error('Failed to refresh plugins after error:', refreshError);
+        }
+        
+        showSnackbar(`Warning: Request failed but plugin may have been toggled. Error: ${error.message}`, 'warning');
+      } finally {
+        setIsDeploying(false);
+      }
+    };
+
+    // 检查是否有未保存的更改
+    if ((hasUnsavedChanges && code.trim() !== originalCode.trim()) || 
+        (!selectedPlugin && code.trim() === defaultTemplate.trim())) {
+      setPendingAction({ action: executeToggle, args: [] });
+      setConfirmDialogOpen(true);
+    } else {
+      await executeToggle();
+    }
+  };
+
+  // 创建新插件
+  const handleCreateNew = () => {
+    const createNewPlugin = () => {
+      setSelectedPlugin(null);
+      setCode(defaultTemplate);
+      setOriginalCode('');  // 设置为空字符串，这样新建的模板会被视为未保存的更改
+      setHasUnsavedChanges(true);  // 直接设置为未保存状态
+    };
+
+    // 检查是否有未保存的更改
+    if (hasUnsavedChanges && code.trim() !== originalCode.trim()) {
+      setPendingAction({ action: createNewPlugin, args: [] });
+      setConfirmDialogOpen(true);
+    } else {
+      createNewPlugin();
+    }
+  };
+
+  // 丢弃新插件
+  const handleDiscardNew = () => {
+    setCode('');
+    setOriginalCode('');
+    setHasUnsavedChanges(false);
+  };
+
   return (
     <Box
     sx={{
-        minHeight: '100vh',
+        height: '100vh',
         width: '100vw',
         background: '#0A0D17',
         display: 'flex',
@@ -335,7 +646,7 @@ class CustomDefensePlugin(DefensePlugin):
         overflow: 'hidden',
         position: 'relative',
         px: 2,
-        py: 6,
+        py: 4,
         margin: 0,
         boxSizing: 'border-box',
       }}
@@ -428,6 +739,48 @@ class CustomDefensePlugin(DefensePlugin):
         </DialogActions>
       </Dialog>
       
+      {/* 未保存更改确认对话框 */}
+      <Dialog
+        open={confirmDialogOpen}
+        onClose={() => setConfirmDialogOpen(false)}
+        aria-labelledby="unsaved-dialog-title"
+        aria-describedby="unsaved-dialog-description"
+      >
+        <DialogTitle id="unsaved-dialog-title">
+          Unsaved Changes
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="unsaved-dialog-description">
+            Current plugin has unsaved changes. Continuing will lose these changes. Do you want to continue?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialogOpen(false)} color="primary">
+            Cancel
+          </Button>
+          <Button 
+            onClick={() => {
+              setConfirmDialogOpen(false);
+              if (pendingAction) {
+                pendingAction.action(...pendingAction.args);
+                setPendingAction(null);
+              }
+            }} 
+            color="primary" 
+            variant="contained"
+            sx={{
+              background: 'linear-gradient(to right, #bb86fc, #a647f5)',
+              '&:hover': {
+                background: 'linear-gradient(to right, #c996ff, #b057ff)',
+                boxShadow: '0 4px 8px rgba(187, 134, 252, 0.3)',
+              },
+            }}
+          >
+            Continue
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
       {/* 背景装饰圆形 */}
       <Box
         sx={{
@@ -436,7 +789,7 @@ class CustomDefensePlugin(DefensePlugin):
           height: '28vh',
           borderRadius: '50%',
           background: 'radial-gradient(circle,rgb(112, 2, 163), transparent)',
-          top: '10%',
+          top: '5%',
           left: '5%',
           filter: 'blur(70px)',
           zIndex: 0,
@@ -452,7 +805,7 @@ class CustomDefensePlugin(DefensePlugin):
           height: '20vh',
           borderRadius: '50%',
           background: 'radial-gradient(circle,rgb(69, 28, 157), transparent)',
-          top: '10%',
+          top: '5%',
           right: '10%',
           filter: 'blur(70px)',
           zIndex: 0,
@@ -468,7 +821,7 @@ class CustomDefensePlugin(DefensePlugin):
           height: '30vh',
           borderRadius: '50%',
           background: 'radial-gradient(circle,rgb(56, 20, 132), transparent)',
-          bottom: '10%',
+          bottom: '5%',
           right: '30%',
           filter: 'blur(70px)',
           zIndex: 0,
@@ -479,9 +832,9 @@ class CustomDefensePlugin(DefensePlugin):
       />
 
       {/* 内容区域 */}
-      <Box sx={{ width: '100%', maxWidth: '1400px', zIndex: 1 }}>
+      <Box sx={{ width: '100%', maxWidth: '1200px', zIndex: 1, height: 'calc(100% - 20px)', display: 'flex', flexDirection: 'column' }}>
         {/* 返回按钮和标题 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <IconButton 
             onClick={() => navigate('/defencelist')} 
           sx={{
@@ -495,60 +848,41 @@ class CustomDefensePlugin(DefensePlugin):
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h5" sx={{ fontWeight: 600, color: 'white' }}>
-            Python Middle Layer Defence
+            Mid-layer plugin deployment
           </Typography>
         </Box>
 
         {/* 说明文本 */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="body1" sx={{ color: '#eee', mb: 2 }}>
-            You can add a Python middle layer before the LLaMA call, and add a detection module after the model returns.
-            This allows you to filter both user inputs and model outputs to prevent prompt injection attacks.
-        </Typography>
+        <Box sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ color: '#eee' }}>
-            Write your Python middleware code below. You can define functions for preprocessing prompts and
-            filtering responses.
+            You can add a Python middle layer plugin before the LLaMA call, or/and add a detection module after the model returns to filter user inputs or/and model outputs to prevent prompt injection attacks.
         </Typography>
       </Box>
 
         {/* 左右布局容器 */}
-        <Box sx={{ display: 'flex', gap: 3 }}>
-          {/* 左侧代码编辑器 */}
+        <Box sx={{ display: 'flex', gap: 3, flex: 1, overflow: 'hidden' }}>
+          {/* 左侧插件列表 */}
           <Box
             sx={{
-              width: '900px',
+              width: '350px',
+              minWidth: '300px',
               borderRadius: '12px',
               background: 'rgba(255, 255, 255, 0.05)',
               p: 3,
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              overflow: 'hidden',
             }}
           >
-            <TextField
-              multiline
-              fullWidth
-              variant="outlined"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              InputProps={{
-                style: {
-                  fontFamily: 'monospace',
-                  color: '#d4d4d4',
-                  fontSize: '14px',
-                  lineHeight: '1.5',
-                },
-              }}
-              rows={24}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  backgroundColor: '#1e1e2d',
-                },
-              }}
-            />
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" sx={{ color: 'white' }}>
+                Plugins
+              </Typography>
               <Button
                 variant="outlined"
-                onClick={handleUpload}
-                disabled={isUploading}
+                size="small"
+                onClick={handleCreateNew}
                 sx={{
                   borderColor: 'rgba(187, 134, 252, 0.5)',
                   color: '#bb86fc',
@@ -558,160 +892,323 @@ class CustomDefensePlugin(DefensePlugin):
                   },
                 }}
               >
-                {isUploading ? <CircularProgress size={24} color="inherit" /> : 'Upload'}
+                New plugin
               </Button>
-            </Box>
           </Box>
-
-          {/* 右侧插件列表 */}
-          <Box sx={{ flex: 1 }}>
-            {/* 插件列表区域 */}
-      <Box
-        sx={{
-          width: '100%',
-                borderRadius: '12px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                p: 3, 
-              }}
-            >
-              <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
-                Available Plugins
-              </Typography>
               
               {plugins.length === 0 ? (
-                <Typography variant="body2" sx={{ color: '#aaa', fontStyle: 'italic', mb: 3 }}>
-                  No plugins available. Upload a plugin first.
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                height: '200px',
+                borderRadius: '8px',
+                border: '1px dashed rgba(255, 255, 255, 0.2)',
+                p: 3
+              }}>
+                <Typography variant="body2" sx={{ color: '#aaa', fontStyle: 'italic', textAlign: 'center', mb: 2 }}>
+                  No plugins available yet.
                 </Typography>
-              ) : (
-                <Box sx={{ mb: 3, maxHeight: '500px', overflowY: 'auto' }}>
-                  <RadioGroup
-                    value={selectedPlugin || ''}
-                    onChange={(e) => setSelectedPlugin(e.target.value)}
-                  >
+                <Typography variant="body2" sx={{ color: '#aaa', textAlign: 'center', mb: 2 }}>
+                  Create your first plugin to defend against prompt injection attacks.
+                </Typography>
+              </Box>
+            ) : (
+              <List sx={{ overflowY: 'auto', flex: 1 }}>
                     {plugins.map((plugin, index) => (
                       <Box key={plugin.name}>
-                        <Box 
+                    <ListItem 
                           sx={{
-                            py: 2,
-                            px: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+                        py: 1.5,
                             backgroundColor: selectedPlugin === plugin.name 
                               ? 'rgba(187, 134, 252, 0.1)' 
                               : 'transparent',
                             '&:hover': {
                               backgroundColor: 'rgba(187, 134, 252, 0.05)',
                             },
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                            <FormControlLabel
-                              value={plugin.name}
-                              control={
-                                <Radio
-                                  sx={{
-                                    color: '#bb86fc',
-                                    '&.Mui-checked': {
-                                      color: '#bb86fc',
-                                    },
-                                  }}
-                                />
-                              }
-                              label={
-                                <Box>
+                        borderRadius: '4px'
+                      }}
+                      onClick={() => handleSelectPlugin(plugin.name)}
+                    >
+                      <ListItemText
+                        primary={
                                   <Typography variant="body1" sx={{ 
                                     color: 'white',
                                     fontWeight: selectedPlugin === plugin.name ? 500 : 400,
                                   }}>
                                     {plugin.name}
                                   </Typography>
-                                  <Typography variant="caption" sx={{ color: '#aaa' }}>
-                                    {plugin.description || 'Python middleware plugin'}
-                                  </Typography>
-                                </Box>
-                              }
+                        }
+                      />
+                      <ListItemSecondaryAction>
+                        <Switch 
+                          checked={plugin.info?.is_active || false}
+                          onChange={(e) => handleToggleSwitch(e, plugin.name)}
+                          disabled={isDeploying}
                               sx={{ 
-                                margin: 0,
-                                flex: 1
-                              }}
-                            />
-                          </Box>
-
-                          <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
-                            <Box sx={{ 
-                              px: 1.5, 
-                              py: 0.5, 
-                              borderRadius: 1, 
-                              mr: 2,
-                              backgroundColor: plugin.info?.is_active 
-                                ? 'rgba(76, 175, 80, 0.2)' 
-                                : 'rgba(158, 158, 158, 0.2)',
-                              color: plugin.info?.is_active ? '#81c784' : '#bdbdbd',
-                              fontSize: '0.75rem',
-                              fontWeight: 500,
-                            }}>
-                              {plugin.info?.is_active ? 'Active' : 'Inactive'}
-                            </Box>
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: '#bb86fc',
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                              backgroundColor: '#bb86fc',
+                            },
+                          }}
+                        />
                             <IconButton
                               size="small"
-                              aria-label="delete"
-                              onClick={(e) => handleOpenDeleteDialog(e, plugin.name)}
+                          edge="end"
+                          aria-label="more"
+                          onClick={(e) => handleOpenMenu(e, plugin.name)}
                               sx={{ 
                                 color: 'rgba(255, 255, 255, 0.5)',
                                 '&:hover': {
-                                  color: '#f44336',
-                                  backgroundColor: 'rgba(244, 67, 54, 0.08)',
+                              color: '#fff',
+                              backgroundColor: 'rgba(255, 255, 255, 0.08)',
                                 },
                               }}
                             >
-                              <DeleteIcon fontSize="small" />
+                          <MoreVertIcon fontSize="small" />
                             </IconButton>
-                          </Box>
-                        </Box>
+                      </ListItemSecondaryAction>
+                    </ListItem>
                         {index < plugins.length - 1 && (
                           <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
                         )}
                       </Box>
                     ))}
-                  </RadioGroup>
+              </List>
+            )}
+          </Box>
+
+          {/* 右侧代码编辑器 */}
+          <Box
+            sx={{
+              flex: 1,
+              borderRadius: '12px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              p: 3,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            {(code || selectedPlugin) && (
+              <Box sx={{ mb: 2 }}>
+                {selectedPlugin && isPluginActive(selectedPlugin) && (
+                  <Box 
+                    sx={{ 
+                      mb: 2, 
+                      p: 1.5, 
+                      backgroundColor: 'rgba(255, 153, 0, 0.15)', 
+                      borderRadius: '4px',
+                      borderLeft: '3px solid rgba(255, 153, 0, 0.7)',
+                      display: 'flex', 
+                      alignItems: 'center' 
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ color: 'rgba(255, 200, 100, 0.9)' }}>
+                      This plugin is currently active. You need to disable it before making changes.
+                    </Typography>
                 </Box>
               )}
-              
-              {/* 部署按钮 */}
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  variant="contained"
-                  onClick={handleDeploy}
-                  disabled={isDeploying || !selectedPlugin}
-                  sx={{
-                    background: getSelectedPluginStatus()
-                      ? 'linear-gradient(to right, #f44336, #e53935)'
-                      : 'linear-gradient(to right, #bb86fc, #a647f5)',
-                    '&:hover': {
-                      background: getSelectedPluginStatus()
-                        ? 'linear-gradient(to right, #ef5350, #e57373)'
-                        : 'linear-gradient(to right, #c996ff, #b057ff)',
-                      boxShadow: getSelectedPluginStatus()
-                        ? '0 4px 8px rgba(244, 67, 54, 0.3)'
-                        : '0 4px 8px rgba(187, 134, 252, 0.3)',
+                {selectedPlugin ? (
+                  // 已有插件显示只读标题
+                  <Typography variant="h6" sx={{ color: 'white', mb: 1 }}>
+                    {`${selectedPlugin}.py`}
+                  </Typography>
+                ) : (
+                  // 新建插件显示只读标题
+                  <Typography variant="h6" sx={{ color: 'white', mb: 1 }}>
+                    {`Custom Defense.py`}
+                  </Typography>
+                )}
+                
+                {selectedPlugin ? (
+                  // 已有插件显示只读描述
+                  <Typography variant="body2" sx={{ color: '#aaa' }}>
+                    {plugins.find(p => p.name === selectedPlugin)?.description || 'Python middleware plugin'}
+                  </Typography>
+                ) : (
+                  // 新建插件显示只读描述
+                  <Typography variant="body2" sx={{ color: '#aaa' }}>
+                    {'A custom defense plugin'}
+                  </Typography>
+                )}
+              </Box>
+            )}
+            
+            {code || selectedPlugin ? (
+              <>
+                <TextField
+                  multiline
+                  fullWidth
+                  variant="outlined"
+                  value={code}
+                  onChange={(e) => {
+                    if (isCurrentPluginEditable()) {
+                      setCode(e.target.value);
+                      // Only mark as unsaved if there's an actual difference
+                      const newCode = e.target.value;
+                      const hasChanges = newCode.trim() !== originalCode.trim();
+                      setHasUnsavedChanges(hasChanges);
+                    }
+                  }}
+                  InputProps={{
+                    style: {
+                      fontFamily: 'monospace',
+                      color: '#d4d4d4',
+                      fontSize: '14px',
+                      lineHeight: '1.5',
                     },
-                    '&.Mui-disabled': {
-                      background: 'rgba(255, 255, 255, 0.12)',
-                      color: 'rgba(255, 255, 255, 0.3)',
+                    readOnly: !isCurrentPluginEditable(),
+                  }}
+                  rows={18}
+                  sx={{
+                    flex: 1,
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                      backgroundColor: '#1e1e2d',
+                      height: '100%',
+                      opacity: isCurrentPluginEditable() ? 1 : 0.8,
+                    },
+                    '& .MuiInputBase-root': {
+                      height: '100%',
+                    },
+                    '& .MuiInputBase-inputMultiline': {
+                      height: '100%',
+                      overflowY: 'auto',
                     },
                   }}
-                >
-                  {isDeploying ? (
-                    <CircularProgress size={24} color="inherit" />
-                  ) : (
-                    getSelectedPluginStatus() ? 'Undeploy' : 'Deploy'
+                />
+                
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 2 }}>
+                  {selectedPlugin ? (
+                    <>
+                      <Button
+                        variant="text"
+                        onClick={(e) => handleOpenDeleteDialog(e, selectedPlugin)}
+                        disabled={isDeleting || isPluginActive(selectedPlugin)}
+                        sx={{
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          },
+                          '&.Mui-disabled': {
+                            color: 'rgba(255, 255, 255, 0.3)',
+                          },
+                        }}
+                      >
+                        {isDeleting ? <CircularProgress size={24} color="inherit" /> : 'Delete'}
+                      </Button>
+                      {/* 始终显示Discard changes按钮，但根据状态禁用 */}
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          setCode(originalCode);
+                          setHasUnsavedChanges(false);
+                        }}
+                        disabled={!hasUnsavedChanges || isPluginActive(selectedPlugin)}
+                        sx={{
+                          borderColor: hasUnsavedChanges ? 'rgba(187, 134, 252, 0.5)' : 'rgba(255, 255, 255, 0.12)',
+                          color: hasUnsavedChanges ? '#bb86fc' : 'rgba(255, 255, 255, 0.3)',
+                          '&:hover': {
+                            borderColor: '#bb86fc',
+                            backgroundColor: 'rgba(187, 134, 252, 0.08)',
+                          },
+                          '&.Mui-disabled': {
+                            borderColor: 'rgba(255, 255, 255, 0.12) !important',
+                            color: 'rgba(255, 255, 255, 0.3) !important',
+                          },
+                        }}
+                      >
+                        Discard changes
+                      </Button>
+                    </>
+                  ) : code && (
+                    <Button
+                      variant="text"
+                      onClick={handleDiscardNew}
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        },
+                      }}
+                    >
+                      Discard
+                    </Button>
                   )}
-                </Button>
-              </Box>
+                  <Button
+                    variant="contained"
+                    onClick={handleUpload}
+                    disabled={isUploading || (selectedPlugin && isPluginActive(selectedPlugin))}
+                    sx={{
+                      background: 'linear-gradient(to right, #bb86fc, #a647f5)',
+                      '&:hover': {
+                        background: 'linear-gradient(to right, #c996ff, #b057ff)',
+                        boxShadow: '0 4px 8px rgba(187, 134, 252, 0.3)',
+                      },
+                      '&.Mui-disabled': {
+                        background: 'rgba(255, 255, 255, 0.12)',
+                        color: 'rgba(255, 255, 255, 0.3)',
+                      },
+                    }}
+                  >
+                    {isUploading ? <CircularProgress size={24} color="inherit" /> : selectedPlugin ? 'Save' : 'Create'}
+                  </Button>
+                </Box>
+              </>
+            ) : (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  flex: 1
+                }}
+              >
+                <Typography variant="h6" sx={{ color: 'white', mb: 2, textAlign: 'center' }}>
+                  No Plugin Selected
+                </Typography>
+                <Typography variant="body1" sx={{ color: '#aaa', mb: 3, textAlign: 'center' }}>
+                  Select a plugin in the list or click "New plugin" to create a new one
+                </Typography>
             </Box>
+            )}
           </Box>
         </Box>
+        
+        {/* 插件操作菜单 */}
+        <Menu
+          anchorEl={menuAnchorEl}
+          open={Boolean(menuAnchorEl)}
+          onClose={handleCloseMenu}
+          PaperProps={{
+            sx: {
+              backgroundColor: '#1e1e2d',
+              color: 'white',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
+            }
+          }}
+        >
+          <MenuItem 
+            onClick={() => {
+              handleOpenDeleteDialog(new Event('click'), activePluginForMenu);
+              handleCloseMenu();
+            }}
+            sx={{
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              }
+            }}
+          >
+            <Typography variant="body2">Delete</Typography>
+          </MenuItem>
+        </Menu>
       </Box>
     </Box>
   );
