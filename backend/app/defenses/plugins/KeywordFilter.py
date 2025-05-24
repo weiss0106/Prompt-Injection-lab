@@ -29,3 +29,6 @@ class KeywordFilterDefense(DefensePlugin):
             if keyword in prompt.lower():
                 return False
         return True
+
+    def process_output(self,output:str)->str:
+        return output

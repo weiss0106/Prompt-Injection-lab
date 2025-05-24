@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Optional, Dict, Any, Union, Callable
 from pydantic import BaseModel
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 
 import abc
 from app.llm.loader import LLMEngine
@@ -97,6 +97,12 @@ class Challenge(abc.ABC):
         """
         pass
     
+    async def upload_file(self,file:UploadFile)->str:
+        """
+        Upload a file (optional method)
+        """
+        raise NotImplementedError("This challenge does not support file upload")
+    
     def is_completed(self)->bool:
         """
         Check if the challenge is completed
@@ -122,7 +128,7 @@ class Challenge(abc.ABC):
             "name":self.name,
             "description":self.description,
             "type":self.challenge_type.value,
-            "defenses": [defense.value for defense in self.defense_type],
+            #"defenses": [defense.value for defense in self.defense_type],
             "difficulty":self.difficulty
         }
     

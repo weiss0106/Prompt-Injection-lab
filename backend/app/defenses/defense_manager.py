@@ -170,12 +170,14 @@ class DefenseManager():
                 processed_prompt = plugin.process_prompt(processed_prompt)
         return processed_prompt
     
-    def process_output(self,prompt:str)->str:
+    def process_output(self,output:str)->str:
         """Process the output with all active defenses"""
+        processed_output = output
         for plugin in self.plugins.values():
-            if plugin.is_active and not plugin.validate_prompt(prompt):
-                return False
-        return True
+            if plugin.is_active:
+                processed_output = plugin.process_output(processed_output)
+                print(f"DEBUG: Processed output: {processed_output}")
+        return processed_output
     
     def validate_result(self,prompt:str)->bool:
         """Validate the result with all active defenses"""
