@@ -122,7 +122,7 @@ class Challenge(abc.ABC):
             "name":self.name,
             "description":self.description,
             "type":self.challenge_type.value,
-            "defenses": [defense.value for defense in self.defense_type],
+            #"defenses": [defense.value for defense in self.defense_type],
             "difficulty":self.difficulty
         }
     

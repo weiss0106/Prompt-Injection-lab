@@ -1,3 +1,4 @@
+from app.defenses.base import DefenseType
 from .base import Challenge, ChallengeResponse, ChallengeType
 
 
@@ -12,6 +13,7 @@ class Challenge2(Challenge):
             name="System Prompt Restriction",
             description="Increased Role Definition and Keyword Refusal",
             challenge_type=ChallengeType.DIRECT,
+            defense_type=DefenseType.NONE,
             _key="Obliviate",
             difficulty=2,
         )
