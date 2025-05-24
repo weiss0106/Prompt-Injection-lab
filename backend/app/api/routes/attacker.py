@@ -1,5 +1,5 @@
 from app.api.routes.llmapi import PromptRequest
-from fastapi import APIRouter,HTTPException
+from fastapi import APIRouter, File,HTTPException, UploadFile
 from app.challenges.challenge_manager import ChallengeManager
 from app.models.score import ScoreManager
 
@@ -70,9 +70,26 @@ async def validate_key(challenge_id:str,key:str):
     else:
         raise HTTPException(status_code=401,detail="Invalid key")
 
-@router.post("/attacker/progress")
+@router.post("/get_progress")
 async def get_attacker_progress():
     """
     Get attacker progress of all challenges
     """
     return challenge_manager.check_all_challenges()
+
+@router.post("/{challenge_id}/upload")
+async def upload_file(challenge_id:str,file:UploadFile = File(...)):
+    """
+    Upload a file for indirect challenge
+    """
+    challenge = challenge_manager.get_challenge(challenge_id)
+    if not challenge:
+        raise HTTPException(status_code=404,detail="Challenge not found")
+    
+    try:
+        result = await challenge.upload_file(file)
+        return {"message": result}
+    except NotImplementedError:
+        raise HTTPException(status_code=400,detail="This challenge does not support file upload")
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=f"File upload failed: {str(e)}")

@@ -34,10 +34,10 @@ class Challenge2(Challenge):
             
             print("DEBUG:", self.system_instruction)
             # Check if the challenge is completed
-            completed = self.is_completed(response)
+            #completed = self.is_completed(response)
 
             return ChallengeResponse(
-                response=response, success=True, completed=completed, _key=self._key
+                response=response, success=True, completed=self.completed, _key=self._key
             )
         except Exception as e:
             return self.handle_error(e)

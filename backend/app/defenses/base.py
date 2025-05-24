@@ -12,6 +12,7 @@ class DefenseType(Enum):
     CONTEXT_AWARE = "context_aware"
     PROMPT_STRENGTHENING = "prompt_strengthening"
     SANDBOX_EXECUTION = "sandbox_execution"
+    
 class DefensePlugin():
     """
     Base class for defense plugins
@@ -71,7 +72,7 @@ class DefensePlugin():
             "name":self.name,
             "description":self.description,
             "is_active":self.is_active,
-            "defense_type":self.defense_type.value
+            #"defense_type":self.defense_type.value
         }
     
     def reset(self)-> None:

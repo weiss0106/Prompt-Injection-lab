@@ -44,8 +44,11 @@ class ChallengeManager:
         from .challenge1 import Challenge1
         from .challenge2 import Challenge2
         from .final_challenge import FinalChallenge
+        from .indirect_challenge import IndirectChallenge
+        
         self.register_challenge(Challenge1())
         self.register_challenge(Challenge2())
+        self.register_challenge(IndirectChallenge())
         defense_manager = DefenseManager()
         self.register_challenge(FinalChallenge(defense_manager))
     
