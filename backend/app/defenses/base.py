@@ -71,7 +71,6 @@ class DefensePlugin():
             "name":self.name,
             "description":self.description,
             "is_active":self.is_active,
-            "config":self.config,
             "defense_type":self.defense_type.value
         }
     
