@@ -5,6 +5,7 @@ from fastapi import HTTPException
 
 import abc
 from app.llm.loader import LLMEngine
+from app.defenses.base import DefenseType
 
 class ChallengeType(Enum):
     """
@@ -16,17 +17,17 @@ class ChallengeType(Enum):
     FINAL = "final_challenge"
 
 
-class DefenseType(Enum):
-    """
-    Defense Type
-    """
+# class DefenseType(Enum):
+#     """
+#     Defense Type
+#     """
 
-    NONE = "none"
-    INPUT_VALIDATION = "input_validation"
-    OUTPUT_FILTERING = "output_filtering"
-    CONTEXT_AWARE = "context_aware"
-    PROMPT_STRENGTHENING = "prompt_strengthening"
-    SANDBOX_EXECUTION = "sandbox_execution"
+#     NONE = "none"
+#     INPUT_VALIDATION = "input_validation"
+#     OUTPUT_FILTERING = "output_filtering"
+#     CONTEXT_AWARE = "context_aware"
+#     PROMPT_STRENGTHENING = "prompt_strengthening"
+#     SANDBOX_EXECUTION = "sandbox_execution"
 
 class ChallengeResponse(BaseModel):
     """
@@ -50,7 +51,8 @@ class Challenge(abc.ABC):
         challenge_type: ChallengeType,
         defense_type: List[DefenseType] = None,
         _key: str = None,
-        difficulty: int = 1
+        difficulty: int = 1,
+        completed: bool = False
     ):
         """
         Initialize the challenge
@@ -74,7 +76,7 @@ class Challenge(abc.ABC):
         self.difficulty = difficulty
         self.llm_engine = LLMEngine()
         self.active_defenses = []
-
+        self.completed = completed
     @property
     def secret_key(self) -> str:
         """
@@ -95,11 +97,11 @@ class Challenge(abc.ABC):
         """
         pass
     
-    def is_completed(self,response:str)->bool:
+    def is_completed(self)->bool:
         """
         Check if the challenge is completed
         """
-        return self.secret_key in response
+        return self.completed
 
     def apply_defenses(self,prompt:str)->str:
         """
@@ -110,11 +112,6 @@ class Challenge(abc.ABC):
             processed_prompt = defense.apply(processed_prompt)
         return processed_prompt
     
-    def validate_prompt(self,prompt:str)->bool:
-        """ 
-        Validate the prompt
-        """
-        return True
 
     def get_challenge_info(self)->Dict[str,Any]:
         """
@@ -163,6 +160,9 @@ class Challenge(abc.ABC):
         """
         Validate the key
         """
-        return key == self._key
+        if key == self._key:
+            self.completed = True
+            return True
+        return False
     
     

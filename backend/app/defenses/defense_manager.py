@@ -1,3 +1,4 @@
+import json
 import os
 import importlib.util
 import sys
@@ -8,7 +9,9 @@ class DefenseManager():
     def __init__(self):
         self.plugins_dir = "app/defenses/plugins"
         self.plugins: Dict[str,DefensePlugin] = {}
+        self.plugins_state_file = "app/defenses/plugins/plugins_state.json"
         self._ensure_plugins_directory()
+        self._load_plugins_state()
     
     def _ensure_plugins_directory(self)->None:
         """Ensure the plugins directory exists"""
@@ -17,6 +20,7 @@ class DefenseManager():
     
     def _validate_plugin(self,code:str)->bool:
         """Validate the plugin"""
+        print("DEBUG:",code)
         try:
             if "class" not in code or "DefensePlugin" not in code:
                 return False
@@ -30,8 +34,15 @@ class DefenseManager():
         """Load all plugins from the plugins directory"""
         try:
             file_path = os.path.join(self.plugins_dir, f"{plugin_name}.py")
+            #print(f"DEBUG: Attempting to load plugin from {file_path}")
+            
+            if not os.path.exists(file_path):
+                #print(f"DEBUG: Plugin file {file_path} does not exist")
+                return None
+                
             spec = importlib.util.spec_from_file_location(plugin_name,file_path)            
             if spec is None or spec.loader is None:
+                #print(f"DEBUG: Failed to create spec for {plugin_name}")
                 return None
             
             module = importlib.util.module_from_spec(spec)
@@ -41,9 +52,13 @@ class DefenseManager():
             for attr_name in dir(module):
                 attr = getattr(module,attr_name)
                 if(isinstance(attr,type) and issubclass(attr,DefensePlugin) and attr != DefensePlugin):
+                    print(f"DEBUG: Successfully loaded plugin class {attr_name}")
                     return attr()
+            
+            print(f"DEBUG: No valid plugin class found in {plugin_name}")
             return None
-        except Exception:
+        except Exception as e:
+            print(f"DEBUG: Error loading plugin {plugin_name}: {str(e)}")
             return None
     
     def _save_plugin(self,plugin_name:str,code:str)->None:
@@ -55,22 +70,50 @@ class DefenseManager():
             return True
         except Exception:
             return False
+    def _save_plugins_state(self)->None:
+        state = {
+            name:{
+                "is_active":plugin.is_active,
+                "description":plugin.description,
+                #"info":plugin.get_info()
+            }
+            for name,plugin in self.plugins.items()
+        }
+        with open(self.plugins_state_file,"w") as f:
+            json.dump(state,f)
     
     async def upload_plugins(self,plugin_name:str,code:str)->None:
         """Upload all plugins to the database"""
+        #print(f"DEBUG: Uploading plugin {plugin_name}")
         if not self._validate_plugin(code):
+            print("DEBUG: Invalid plugin")
             return False
         
         if not self._save_plugin(plugin_name,code):
+            #print("DEBUG: Failed to save plugin")
             return False
         
         plugin = self._load_plugins(plugin_name)
         if plugin is None:
+           # print("DEBUG: Failed to load plugin")
             return False
         
         self.plugins[plugin_name] = plugin
+        print("DEBUG: Plugin uploaded successfully")
+        self._save_plugins_state()
         return True
-    
+    def _load_plugins_state(self)->None:
+        """Load the plugins state from the plugins state file"""
+        if not os.path.exists(self.plugins_state_file):
+            return
+        with open(self.plugins_state_file,"r") as f:
+            state = json.load(f)
+        for name,info in state.items():
+            plugin = self._load_plugins(name)
+            if plugin:
+                plugin.is_active = info["is_active"]
+                plugin.description = info["description"]
+                self.plugins[name] = plugin
     def get_plugin(self,plugin_name:str)->Optional[DefensePlugin]:
         """Get a plugin by name"""
         return self.plugins.get(plugin_name)
@@ -88,6 +131,8 @@ class DefenseManager():
     
     def toggle_plugin(self,plugin_name:str)->bool:
         """Toggle a plugin"""
+        print(f"DEBUG: Toggling plugin {plugin_name}")
+        print(f"DEBUG: Current plugins: {self.plugins}")
         if plugin_name not in self.plugins:
             return False
         
@@ -101,6 +146,7 @@ class DefenseManager():
         
         # toggle the current plugin status
         self.plugins[plugin_name].is_active = not self.plugins[plugin_name].is_active
+        self._save_plugins_state()
         return True
     
     def delete_plugin(self,plugin_name:str)-> bool:
@@ -111,8 +157,31 @@ class DefenseManager():
             file_path = os.path.join(self.plugins_dir,f"{plugin_name}.py")
             if os.path.exists(file_path):
                 os.remove(file_path)
+            self._save_plugins_state()
             return True
         except Exception:
             return False
     
-            
+    def process_prompt(self,prompt:str)->str:
+        """Process the prompt with all active defenses"""
+        processed_prompt = prompt
+        for plugin in self.plugins.values():
+            if plugin.is_active:
+                processed_prompt = plugin.process_prompt(processed_prompt)
+        return processed_prompt
+    
+    def process_output(self,prompt:str)->str:
+        """Process the output with all active defenses"""
+        for plugin in self.plugins.values():
+            if plugin.is_active and not plugin.validate_prompt(prompt):
+                return False
+        return True
+    
+    def validate_result(self,prompt:str)->bool:
+        """Validate the result with all active defenses"""
+        for plugin in self.plugins.values():
+            if plugin.is_active and not plugin.validate_result(prompt):
+                return False
+        return True
+    
+    

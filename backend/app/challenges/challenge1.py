@@ -30,13 +30,17 @@ class Challenge1(Challenge):
             response = self.generate_llm_response(self.system_instruction,prompt)
             print("DEBUG:",self.system_instruction)
             #Check if the challenge is completed
-            completed = self.is_completed(response)
+            #completed = self.validate_key(key)
             
             return ChallengeResponse(
                 response=response,
                 success=True,
-                completed=completed,
+                completed=self.completed,
                 _key=self._key
             )
         except Exception as e:
-            return self.handle_error(e)
+            return ChallengeResponse(
+                response=str(e),
+                success=False,
+                completed=False
+            )

@@ -1,4 +1,4 @@
-from app.defenses.base import DefensePlugin
+from app.defenses.base import DefensePlugin, DefenseType
 
 class KeywordFilterDefense(DefensePlugin):
     """
@@ -6,10 +6,11 @@ class KeywordFilterDefense(DefensePlugin):
     """
     def __init__(self):
         super().__init__()
-        self.name = "Keyword Filter"
+        self.name = "KeywordFilter"
         self.description = "Filter out keywords in the prompt"
+        self.defense_type = DefenseType.INPUT_VALIDATION
         self.config = {
-            "blocked_keywords":[]
+            "blocked_keywords":["hack","system","key"]
         }
         
     def process_prompt(self,prompt:str) -> str:
@@ -20,7 +21,7 @@ class KeywordFilterDefense(DefensePlugin):
             prompt = prompt.replace(keyword,"[REDACTED]")
         return prompt
     
-    def validate_result(self,prompt:str)-> bool:
+    def validate_prompt(self,prompt:str)-> bool:
         if not self.is_active:
             return True
         
@@ -28,5 +29,3 @@ class KeywordFilterDefense(DefensePlugin):
             if keyword in prompt.lower():
                 return False
         return True
-    
-                    

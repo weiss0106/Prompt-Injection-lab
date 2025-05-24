@@ -47,7 +47,7 @@ async def toggle_defense(plugin_name:str):
     if defense_manager.toggle_plugin(plugin_name):
         return{
             "message":"Defense toggled successfully",
-            "score":score_manager.get_scores(plugin_name)
+            #"score":score_manager.get_scores(plugin_name)
         }
     raise HTTPException(
         status_code=404,

@@ -69,4 +69,10 @@ async def validate_key(challenge_id:str,key:str):
         return {"message":"Key validated successfully!","score":score_manager.get_scores()}
     else:
         raise HTTPException(status_code=401,detail="Invalid key")
-        
+
+@router.post("/attacker/progress")
+async def get_attacker_progress():
+    """
+    Get attacker progress of all challenges
+    """
+    return challenge_manager.check_all_challenges()

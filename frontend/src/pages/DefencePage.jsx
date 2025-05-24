@@ -19,6 +19,7 @@ class CustomDefensePlugin(DefensePlugin):
         self.config = {
             "blocked_keywords": ["hack", "system", "prompt", "secret"]
         }
+        self.defense_type = DefenseType.NONE #Compulsory field
         self.is_active = False
     
     def process_prompt(self, prompt: str) -> str:
@@ -29,13 +30,6 @@ class CustomDefensePlugin(DefensePlugin):
         Returns:
             The processed prompt
         """
-        if not self.is_active:
-            return prompt
-            
-        # Add your preprocessing logic here
-        for keyword in self.config["blocked_keywords"]:
-            if keyword in prompt.lower():
-                prompt = prompt.replace(keyword, "[REDACTED]")
         return prompt
     
     def validate_prompt(self, prompt: str) -> bool:
@@ -46,22 +40,14 @@ class CustomDefensePlugin(DefensePlugin):
         Returns:
             True if the prompt is valid, False otherwise
         """
-        if not self.is_active:
-            return True
-            
-        # Add your validation logic here
-        for keyword in self.config["blocked_keywords"]:
-            if keyword in prompt.lower():
-                return False
         return True
         
-    def set_config(self, config):
+    def process_output(self,output:str)->str:
         """
-        Set the config
-        Args:
-            config: The config to set
+        Process the output
         """
-        self.config = config`);
+        return output`);
+            
 
   // 新增状态
   const [plugins, setPlugins] = useState([]);  // 插件列表
@@ -126,23 +112,37 @@ class CustomDefensePlugin(DefensePlugin):
     
     try {
       // 找出当前插件中的最大编号
-      let maxPluginNumber = 0;
-      plugins.forEach(plugin => {
-        // 假设插件名格式为 "defence_X" 或其它包含数字的格式
-        const match = plugin.name.match(/\d+/);
-        if (match) {
-          const num = parseInt(match[0], 10);
-          maxPluginNumber = Math.max(maxPluginNumber, num);
-        }
-      });
+      // let maxPluginNumber = 0;
+      // plugins.forEach(plugin => {
+      //   // 假设插件名格式为 "defence_X" 或其它包含数字的格式
+      //   const match = plugin.name.match(/\d+/);
+      //   if (match) {
+      //     const num = parseInt(match[0], 10);
+      //     maxPluginNumber = Math.max(maxPluginNumber, num);
+      //   }
+      // });
       
-      // 新插件编号为最大编号+1
-      const pluginNumber = maxPluginNumber + 1;
-      
+      // // 新插件编号为最大编号+1
+      // const pluginNumber = maxPluginNumber + 1;
+      const nameMatch = code.match(/self\.name\s*=\s*["']([^"']+)["']/);
+      const pluginName = nameMatch ? nameMatch[1] : 'custom_defense';
+
+      if(!pluginName){
+        showSnackbar('Please set a name for your plugin using self.name = "Your Plugin Name"', 'warning');
+        setIsUploading(false);
+        return;
+      }
+      // 检查名称是否已经存在
+      if (plugins.some(plugin => plugin.name === pluginName)) {
+        showSnackbar(`Plugin name "${pluginName}" already exists. Please choose another name.`, 'error');
+        setIsUploading(false);
+        return;
+      }
       // 创建文件对象
       const file = new Blob([code], { type: 'text/plain' });
       const formData = new FormData();
-      const fileName = `defence_${pluginNumber}.py`;
+      //const fileName = `defence_${pluginNumber}.py`;
+      const fileName = `${pluginName}.py`;
       formData.append('file', file, fileName);
       
       // 上传插件
