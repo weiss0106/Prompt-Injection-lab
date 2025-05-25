@@ -12,6 +12,7 @@ export default function ModeSelectPage() {
   const attackLottieRef = useRef(null);
   const defenceLottieRef = useRef(null);
   const isDefenceUnlocked = userScore.attacker_score >= 3;
+  const [hasActiveDefense, setHasActiveDefense] = useState(false);
 
   // 获取用户分数
   useEffect(() => {
@@ -28,6 +29,23 @@ export default function ModeSelectPage() {
     }
     
     fetchUserScore();
+  }, []);
+
+  // 检查防御插件状态
+  useEffect(() => {
+    async function checkDefensePlugins() {
+      try {
+        const response = await fetch('http://localhost:8001/defender/defenses');
+        if (response.ok) {
+          const plugins = await response.json();
+          setHasActiveDefense(plugins.some(plugin => plugin.info.is_active));
+        }
+      } catch (err) {
+        console.error('Error checking defense plugins:', err);
+      }
+    }
+    
+    checkDefensePlugins();
   }, []);
 
   // 加载动画文件
@@ -233,7 +251,20 @@ export default function ModeSelectPage() {
                   <Box sx={{ color: '#fff' }}>Loading animation...</Box>
                 )}
               </Box>
-              <Typography variant="h6" sx={{ color: '#fff', mb: 4, fontWeight: 600 }}>Attack</Typography>
+              <Typography variant="h6" sx={{ color: '#fff', mb: 4, fontWeight: 600 }}>
+                Attack 
+                <Typography 
+                  component="span" 
+                  sx={{ 
+                    color: '#bb86fc',
+                    fontSize: '0.9rem',
+                    ml: 1,
+                    opacity: 0.9
+                  }}
+                >
+                  ({userScore.attacker_score}/4 completed)
+                </Typography>
+              </Typography>
             </Box>
             <Box>
               <Button
@@ -247,6 +278,7 @@ export default function ModeSelectPage() {
                   px: 3,
                   width: '100%',
                   mb: 2,
+                  position: 'relative',
                   '&:hover': {
                     background: 'linear-gradient(to right, #c996ff, #a969c9)',
                     boxShadow: '0 4px 8px rgba(187, 134, 252, 0.3)',
@@ -254,6 +286,26 @@ export default function ModeSelectPage() {
                 }}
               >
                 Continue
+                {hasActiveDefense && userScore.attacker_score >= 3 && userScore.attacker_score < 4 && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: -8,
+                      right: -8,
+                      background: 'linear-gradient(45deg, #ff4081, #f50057)',
+                      borderRadius: '12px',
+                      px: 1,
+                      py: 0.25,
+                      fontSize: '0.7rem',
+                      fontWeight: 'bold',
+                      color: '#fff',
+                      boxShadow: '0 2px 4px rgba(255, 64, 129, 0.3)',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    NEW
+                  </Box>
+                )}
               </Button>
             </Box>
           </CardContent>

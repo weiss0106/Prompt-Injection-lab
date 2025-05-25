@@ -239,6 +239,12 @@ export default function AttackPage() {
       // 隐藏回答UI
       setShouldHideAnswerUI(true);
       
+      // 如果是final挑战，直接返回到modes页面
+      if (challengeId === 'final') {
+        navigate('/modes');
+        return;
+      }
+      
       // 找出当前挑战在列表中的位置
       const currentIndex = allChallenges.findIndex(c => c.id === challengeId);
       
@@ -698,14 +704,16 @@ export default function AttackPage() {
           aria-describedby="alert-dialog-description"
         >
           <DialogTitle id="alert-dialog-title">
-            {isTechnicalError ? "Technical Error" : isCorrect ? "Correct! 🎉" : "Incorrect ❌"}
+            {isTechnicalError ? "Technical Error" : isCorrect ? (challengeId === 'final' ? "Congratulations! 🎉" : "Correct! 🎉") : "Incorrect ❌"}
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
               {isTechnicalError 
                 ? "Something went wrong. Please try again later."
                 : isCorrect 
-                  ? "You've found the correct secret key! Challenge completed."
+                  ? (challengeId === 'final'
+                    ? "You've found all the secret keys! Great work!"
+                    : "You've found the correct secret key! Challenge completed.")
                   : "That's not the correct secret key. Try a different prompt."}
             </DialogContentText>
           </DialogContent>
@@ -714,7 +722,9 @@ export default function AttackPage() {
               {isTechnicalError 
                 ? "OK" 
                 : isCorrect 
-                  ? "Next Challenge" 
+                  ? (challengeId === 'final'
+                    ? "Finish"
+                    : "Next Challenge") 
                   : "Try Again"}
             </Button>
           </DialogActions>
