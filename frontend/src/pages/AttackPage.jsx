@@ -252,7 +252,7 @@ export default function AttackPage() {
           navigate('/attack/final');
         } else {
           // 如果没有激活的防御插件，跳转到防御列表页面
-          navigate('/defenses');
+          navigate('/modes');
           // 显示提示消息
           setSnackbar({
             open: true,
