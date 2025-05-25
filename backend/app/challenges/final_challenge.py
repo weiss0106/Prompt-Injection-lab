@@ -10,7 +10,7 @@ class FinalChallenge(Challenge):
         super().__init__(
             challenge_id="final",
             name="Ultimate Challenge",
-            description="Bypass all active defenses",
+            description="Try to bypass all the defenses you have added, Good Luck!",
             challenge_type=ChallengeType.FINAL,
             defense_type=[DefenseType.INPUT_VALIDATION,DefenseType.OUTPUT_FILTERING,DefenseType.CONTEXT_AWARE,DefenseType.PROMPT_STRENGTHENING,DefenseType.SANDBOX_EXECUTION],
             _key="FINAL_VICTORY",
