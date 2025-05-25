@@ -1,12 +1,17 @@
 import { Box, Typography, Button, Card, CardContent, IconButton } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import Lottie from 'lottie-react';
 
 export default function ModeSelectPage() {
   const navigate = useNavigate();
   const [userScore, setUserScore] = useState({ attacker_score: 0, defender_score: 0 });
-  const isDefenceUnlocked = userScore.attacker_score > 1;
+  const [attackAnimation, setAttackAnimation] = useState(null);
+  const [defenceAnimation, setDefenceAnimation] = useState(null);
+  const attackLottieRef = useRef(null);
+  const defenceLottieRef = useRef(null);
+  const isDefenceUnlocked = userScore.attacker_score >= 3;
 
   // 获取用户分数
   useEffect(() => {
@@ -24,6 +29,102 @@ export default function ModeSelectPage() {
     
     fetchUserScore();
   }, []);
+
+  // 加载动画文件
+  useEffect(() => {
+    // 加载 attack 动画
+    fetch('./animations/attack.json')
+      .then(response => response.json())
+      .then(data => {
+        setAttackAnimation(data);
+        // 设置随机起始帧
+        setTimeout(() => {
+          if (attackLottieRef.current?.animationItem) {
+            const totalFrames = attackLottieRef.current.animationItem.totalFrames;
+            const randomFrame = Math.floor(Math.random() * totalFrames);
+            attackLottieRef.current.animationItem.goToAndPlay(randomFrame, true);
+          }
+        }, 100);
+      })
+      .catch(error => console.error('Error loading attack animation:', error));
+
+    // 加载 defence 动画
+    fetch('./animations/defence.json')
+      .then(response => response.json())
+      .then(data => {
+        setDefenceAnimation(data);
+        // 根据解锁状态设置动画
+        setTimeout(() => {
+          if (defenceLottieRef.current?.animationItem) {
+            if (isDefenceUnlocked) {
+              const totalFrames = defenceLottieRef.current.animationItem.totalFrames;
+              const randomFrame = Math.floor(Math.random() * totalFrames);
+              defenceLottieRef.current.animationItem.goToAndPlay(randomFrame, true);
+            } else {
+              defenceLottieRef.current.animationItem.goToAndStop(0, true);
+            }
+          }
+        }, 100);
+      })
+      .catch(error => console.error('Error loading defence animation:', error));
+  }, [isDefenceUnlocked]);
+
+  // 监听解锁状态变化
+  useEffect(() => {
+    if (defenceLottieRef.current?.animationItem) {
+      if (isDefenceUnlocked) {
+        const totalFrames = defenceLottieRef.current.animationItem.totalFrames;
+        const randomFrame = Math.floor(Math.random() * totalFrames);
+        defenceLottieRef.current.animationItem.goToAndPlay(randomFrame, true);
+      } else {
+        defenceLottieRef.current.animationItem.goToAndStop(0, true);
+      }
+    }
+  }, [isDefenceUnlocked]);
+
+  const handleAttackContinue = async () => {
+    try {
+      console.log('Starting handleAttackContinue...');
+      
+      // 获取所有挑战和分数
+      const challengesResponse = await fetch('http://localhost:8001/attacker/');
+      const scoreResponse = await fetch('http://localhost:8001/attacker/score');
+      const defenseResponse = await fetch('http://localhost:8001/defender/defenses');
+      
+      if (challengesResponse.ok && scoreResponse.ok && defenseResponse.ok) {
+        const challengesData = await challengesResponse.json();
+        const scoreData = await scoreResponse.json();
+        const defensePlugins = await defenseResponse.json();
+        
+        console.log('Challenges:', challengesData);
+        console.log('Score:', scoreData);
+        console.log('Defense Plugins:', defensePlugins);
+        
+        // 检查是否完成了前三个挑战
+        const hasCompletedIndirect = scoreData.attacker_score >= 3;
+        
+        // 根据分数找到第一个未完成的挑战
+        const firstUncompletedChallenge = challengesData.find((challenge, index) => {
+          // 如果当前分数小于等于当前挑战的索引，说明这个挑战还没完成
+          return index >= scoreData.attacker_score;
+        });
+
+        console.log('First uncompleted challenge:', firstUncompletedChallenge);
+
+        if (firstUncompletedChallenge) {
+          // 如果有未完成的普通挑战，进入该挑战
+          console.log('Navigating to challenge:', firstUncompletedChallenge.id);
+          navigate(`/attack/${firstUncompletedChallenge.id}`);
+        } else if (hasCompletedIndirect) {
+          // 如果完成了前三个挑战，直接进入final challenge
+          console.log('Navigating to final challenge');
+          navigate('/attack/final');
+        }
+      }
+    } catch (err) {
+      console.error('Error in handleAttackContinue:', err);
+    }
+  };
 
   return (
     <Box
@@ -76,10 +177,7 @@ export default function ModeSelectPage() {
             fontSize: { xs: '2.5rem', md: '4.5rem' },
           }}
         >
-          Welcome!
-        </Typography>
-        <Typography variant="subtitle1" sx={{ color: '#ccc', mt: 1 }}>
-          This is a prompt injection lab
+          Choose Your Role
         </Typography>
       </Box>
 
@@ -102,7 +200,7 @@ export default function ModeSelectPage() {
           minHeight: { xs: '400px', md: '600px' },
           background: '#1C1C29',
           borderRadius: 4,
-          p: 2,
+          p: 3,
           textAlign: 'center',
           display: 'flex',
           flexDirection: 'column'
@@ -112,30 +210,52 @@ export default function ModeSelectPage() {
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            pb: 2,
+            height: '100%'
           }}>
             <Box>
-              <Box sx={{ height: 460, background: '#3a3a4a', borderRadius: 2, mb: 2 }} />
-              <Typography variant="h6" sx={{ color: '#fff', mb: 2, fontWeight: 600 }}>Attack Exercise</Typography>
+              <Box sx={{ 
+                height: '380px', 
+                borderRadius: 2, 
+                mb: 2,
+                overflow: 'hidden',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}>
+                {attackAnimation ? (
+                  <Lottie
+                    lottieRef={attackLottieRef}
+                    animationData={attackAnimation}
+                    loop={true}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
+                ) : (
+                  <Box sx={{ color: '#fff' }}>Loading animation...</Box>
+                )}
+              </Box>
+              <Typography variant="h6" sx={{ color: '#fff', mb: 4, fontWeight: 600 }}>Attack</Typography>
             </Box>
-            <Button
-              variant="contained"
-              onClick={() => navigate('/attack')}
-              sx={{
-                background: 'linear-gradient(to right, #bb86fc, #9b59b6)',
-                textTransform: 'none',
-                fontWeight: 'bold',
-                borderRadius: 2,
-                px: 3,
-                width: '100%',
-                '&:hover': {
-                  background: 'linear-gradient(to right, #c996ff, #a969c9)',
-                  boxShadow: '0 4px 8px rgba(187, 134, 252, 0.3)',
-                },
-              }}
-            >
-              Continue
-            </Button>
+            <Box>
+              <Button
+                variant="contained"
+                onClick={handleAttackContinue}
+                sx={{
+                  background: 'linear-gradient(to right, #bb86fc, #9b59b6)',
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                  borderRadius: 2,
+                  px: 3,
+                  width: '100%',
+                  mb: 2,
+                  '&:hover': {
+                    background: 'linear-gradient(to right, #c996ff, #a969c9)',
+                    boxShadow: '0 4px 8px rgba(187, 134, 252, 0.3)',
+                  },
+                }}
+              >
+                Continue
+              </Button>
+            </Box>
           </CardContent>
         </Card>
 
@@ -146,9 +266,9 @@ export default function ModeSelectPage() {
           minHeight: { xs: '400px', md: '600px' },
           background: '#1C1C29',
           borderRadius: 4,
-          p: 2,
+          p: 3,
           textAlign: 'center',
-          opacity: isDefenceUnlocked ? 1 : 0.5,
+          opacity: isDefenceUnlocked ? 1 : 0.7,
           display: 'flex',
           flexDirection: 'column'
         }}>
@@ -156,13 +276,35 @@ export default function ModeSelectPage() {
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
+            height: '100%'
           }}>
             <Box>
-              <Box sx={{ height: 460, background: '#3a3a4a', borderRadius: 2, mb: 2 }} />
-              <Typography variant="h6" sx={{ color: '#fff', mb: 2, fontWeight: 600 }}>Defence Exercise</Typography>
+              <Box sx={{ 
+                height: '380px', 
+                borderRadius: 2, 
+                mb: 2,
+                overflow: 'hidden',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                filter: isDefenceUnlocked ? 'none' : 'grayscale(50%)'
+              }}>
+                {defenceAnimation ? (
+                  <Lottie
+                    lottieRef={defenceLottieRef}
+                    animationData={defenceAnimation}
+                    loop={isDefenceUnlocked}
+                    autoplay={isDefenceUnlocked}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
+                ) : (
+                  <Box sx={{ color: '#fff' }}>Loading animation...</Box>
+                )}
+              </Box>
+              <Typography variant="h6" sx={{ color: '#fff', mb: 4, fontWeight: 600 }}>Defence</Typography>
             </Box>
-            <Box sx={{ width: '100%' }}>
+            <Box>
               <Button
                 variant="contained"
                 disabled={!isDefenceUnlocked}
@@ -176,6 +318,7 @@ export default function ModeSelectPage() {
                   borderRadius: 2,
                   px: 3,
                   width: '100%',
+                  mb: 2,
                   '&:hover': isDefenceUnlocked ? {
                     background: 'linear-gradient(to right, #c996ff, #a969c9)',
                     boxShadow: '0 4px 8px rgba(187, 134, 252, 0.3)',
@@ -185,8 +328,15 @@ export default function ModeSelectPage() {
                 {isDefenceUnlocked ? "Start" : "Locked"}
               </Button>
               {!isDefenceUnlocked && (
-                <Typography variant="caption" sx={{ color: '#aaa', mt: 1, display: 'block' }}>
-                  Finish the attack exercise to unlock this
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    color: '#aaa',
+                    display: 'block',
+                    opacity: 1
+                  }}
+                >
+                  Finish the first 3 attack exercises to unlock this.
                 </Typography>
               )}
             </Box>

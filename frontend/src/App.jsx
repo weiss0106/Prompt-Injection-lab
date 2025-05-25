@@ -64,7 +64,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/modes" element={<ModeSelectPage />} />
-        <Route path="/attack" element={<AttackPage />} />
+        <Route path="/attack/:challengeId" element={<AttackPage />} />
         <Route path="/defencelist" element={<DefenceList />} />
         <Route path="/defence" element={<DefencePage />} />
       </Routes>

@@ -72,7 +72,22 @@ export default function DefenceList() {
       />
 
       {/* 🧢 页面顶部标题部分 */}
-      <Box sx={{ textAlign: 'center', mb: 8, zIndex: 1, width: '100%', maxWidth: '1200px' }}>
+      <Box sx={{ textAlign: 'center', mb: 8, zIndex: 1, width: '100%', maxWidth: '1200px', position: 'relative' }}>
+        <IconButton 
+          onClick={() => navigate('/modes')} 
+          sx={{ 
+            position: 'absolute',
+            left: 0,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: '#fff',
+            '&:hover': {
+              background: 'rgba(255, 255, 255, 0.1)',
+            },
+          }}
+        >
+          <ArrowBackIcon />
+        </IconButton>
         <Typography
           variant="h1"
           sx={{
@@ -83,10 +98,7 @@ export default function DefenceList() {
             fontSize: { xs: '2.5rem', md: '4.5rem' },
           }}
         >
-          Defence from being attacked
-        </Typography>
-        <Typography variant="subtitle1" sx={{ color: '#ccc', mt: 1 }}>
-          This is a prompt injection lab
+          Defence From Being Attacked
         </Typography>
       </Box>
 
@@ -106,20 +118,8 @@ export default function DefenceList() {
       >
         {/* 标题和返回按钮 */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <IconButton 
-            onClick={() => navigate('/modes')} 
-            sx={{ 
-              color: 'white',
-              mr: 1,
-              '&:hover': {
-                background: 'rgba(255, 255, 255, 0.1)',
-              },
-            }}
-          >
-            <ArrowBackIcon />
-          </IconButton>
           <Typography variant="h6" sx={{ fontWeight: 600, color: 'white' }}>
-            Defence
+            Defence Strategies
           </Typography>
         </Box>
 
@@ -166,7 +166,7 @@ export default function DefenceList() {
             </Avatar>
             <Box>
               <Typography variant="h6" sx={{ color: 'white', fontWeight: 500, opacity: 0.8 }}>
-                System prompt strengthen
+                System Prompt Hardening
               </Typography>
               <Typography variant="body2" sx={{ color: '#aaa', mt: 0.5, opacity: 0.8 }}>
                 e.g. Prompt templating
@@ -203,10 +203,10 @@ export default function DefenceList() {
             </Avatar>
             <Box>
               <Typography variant="h6" sx={{ color: 'white', fontWeight: 500 }}>
-                Python middle layer
+                Middleware Plugin Deployment
               </Typography>
               <Typography variant="body2" sx={{ color: '#aaa', mt: 0.5 }}>
-                You can add a Python middle layer before the LLaMA call, and add a detection module after the model returns.
+                Insert a Python middleware before the LLaMA call, and apply detection logic after the model responds.
               </Typography>
             </Box>
           </CardContent>

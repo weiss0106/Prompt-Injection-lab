@@ -136,15 +136,7 @@ class DefenseManager():
         if plugin_name not in self.plugins:
             return False
         
-        # if the plugin is not active, disable all plugins
-        current_status = self.plugins[plugin_name].is_active
-        if not current_status:  # if the current is not active, disable all plugins
-            # disable all plugins
-            for name, plugin in self.plugins.items():
-                if plugin.is_active:
-                    plugin.is_active = False
-        
-        # toggle the current plugin status
+        # Simply toggle the current plugin status
         self.plugins[plugin_name].is_active = not self.plugins[plugin_name].is_active
         self._save_plugins_state()
         return True

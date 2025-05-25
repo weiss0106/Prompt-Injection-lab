@@ -848,14 +848,14 @@ class CustomDefensePlugin(DefensePlugin):
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h5" sx={{ fontWeight: 600, color: 'white' }}>
-            Mid-layer plugin deployment
+            Middleware Plugin Deployment
           </Typography>
         </Box>
 
         {/* 说明文本 */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ color: '#eee' }}>
-            You can add a Python middle layer plugin before the LLaMA call, or/and add a detection module after the model returns to filter user inputs or/and model outputs to prevent prompt injection attacks.
+            Insert a Python middleware before the LLaMA call, and apply detection logic after the model responds.
         </Typography>
       </Box>
 
@@ -978,6 +978,48 @@ class CustomDefensePlugin(DefensePlugin):
                       </Box>
                     ))}
               </List>
+            )}
+
+            {/* 添加导航提示 - 当有激活的插件时显示 */}
+            {plugins.some(plugin => plugin.info?.is_active) && (
+              <Box 
+                sx={{ 
+                  mt: 2,
+                  p: 2, 
+                  borderRadius: '8px',
+                  background: 'linear-gradient(45deg, rgba(187, 134, 252, 0.1), rgba(166, 4, 242, 0.1))',
+                  border: '1px solid rgba(187, 134, 252, 0.2)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 1.5
+                }}
+              >
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: '#bb86fc',
+                    textAlign: 'center'
+                  }}
+                >
+                  Ready to test your plugins?
+                </Typography>
+                <Button
+                  variant="contained"
+                  onClick={() => navigate('/attack/final')}
+                  sx={{
+                    background: 'linear-gradient(to right, #bb86fc, #a647f5)',
+                    width: '100%',
+                    textTransform: 'none',
+                    '&:hover': {
+                      background: 'linear-gradient(to right, #c996ff, #b057ff)',
+                      boxShadow: '0 4px 8px rgba(187, 134, 252, 0.3)',
+                    },
+                  }}
+                >
+                  Final Challenge
+                </Button>
+              </Box>
             )}
           </Box>
 
