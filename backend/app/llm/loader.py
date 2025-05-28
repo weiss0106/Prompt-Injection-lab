@@ -1,8 +1,5 @@
 #llm model loader
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
-import torch
 import os
-from accelerate import init_empty_weights, load_checkpoint_and_dispatch
 import requests
 
 # Cache directory for models
@@ -27,7 +24,7 @@ class LLMEngine:
             # self.device = "cuda" if torch.cuda.is_available() else "cpu"
             self.initialized = True
             # self.model_server_url = "http://localhost:8080/generate"
-            self.ollama_api_url = "http://localhost:11434/api/generate"
+            self.ollama_api_url = f"http://{os.getenv('OLLAMA_HOST', 'localhost')}:11434/api/generate"
             
     def load_model(self):
         try:

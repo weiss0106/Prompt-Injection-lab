@@ -12,7 +12,6 @@ hf-xet==1.1.0
 huggingface-hub==0.31.1
 idna==3.10
 Jinja2==3.1.6
-llama-cpp-python==0.2.18
 MarkupSafe==3.0.2
 mpmath==1.3.0
 networkx==3.2.1
