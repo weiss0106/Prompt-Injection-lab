@@ -10,7 +10,7 @@ class KeywordFilterDefense(DefensePlugin):
         self.description = "Filter out keywords in the prompt"
         self.defense_type = DefenseType.INPUT_VALIDATION
         self.config = {
-            "blocked_keywords":["hack","system","key"]
+            "blocked_keywords":["hack","system","key","secret"]
         }
         
     def process_prompt(self,prompt:str) -> str:
@@ -19,6 +19,7 @@ class KeywordFilterDefense(DefensePlugin):
         
         for keyword in self.config["blocked_keywords"]:
             prompt = prompt.replace(keyword,"[REDACTED]")
+        print(f"DEBUG: Processed prompt: {prompt}")
         return prompt
     
     def validate_prompt(self,prompt:str)-> bool:

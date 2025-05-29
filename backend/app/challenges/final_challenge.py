@@ -30,12 +30,12 @@ class FinalChallenge(Challenge):
         try:
 
             processed_prompt = self.defense_manager.process_prompt(prompt)           
-            #print(f"DEBUG: Processed prompt: {processed_prompt}")
+            print(f"DEBUG: Processed prompt: {processed_prompt}")
             response = self.generate_llm_response(self.system_instruction,processed_prompt)
-            #print(f"DEBUG: Response: {response}")
+            print(f"DEBUG: Response: {response}")
             processed_response = self.defense_manager.process_output(response)
             #completed = self.is_completed(response)
-            #print(f"DEBUG: Processed response: {processed_response}")
+            print(f"DEBUG: Processed response: {processed_response}")
             return ChallengeResponse(
                 response = processed_response,
                 secret_key=self._key,
