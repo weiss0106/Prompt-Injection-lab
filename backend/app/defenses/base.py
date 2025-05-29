@@ -23,29 +23,12 @@ class DefensePlugin():
         self.description:str = "Base class for defense plugins"
         self.config: Dict[str,Any] = {}
         self.defense_type: DefenseType = None
-    
-    @abstractmethod
-    def process_prompt(self,prompt:str) -> str:
         """
         Process the prompt
         """
         pass
     
     @abstractmethod
-    def set_config(self,config:Dict[str,Any])->None:
-        """
-        Set the config
-        Args:
-            config: Dict[str,Any]
-        """
-        self.config = config
-    
-    def get_config(self)->Dict[str,Any]:
-        """
-        Get the config
-        """
-        return self.config
-    
     def enable(self) -> None:
         """
         Enable the defense

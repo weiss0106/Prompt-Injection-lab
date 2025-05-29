@@ -28,20 +28,14 @@ class FinalChallenge(Challenge):
         Process the prompt with all active defenses
         """
         try:
-            # active_defenses =[
-            #     defense for defense in self.defense_manager.plugins
-            #     if defense.is_active()
-            # ]
-            # processed_prompt = prompt
-            # for defense in active_defenses:
-            #     processed_prompt = defense.process_prompt 
+
             processed_prompt = self.defense_manager.process_prompt(prompt)           
-            print(f"DEBUG: Processed prompt: {processed_prompt}")
+            #print(f"DEBUG: Processed prompt: {processed_prompt}")
             response = self.generate_llm_response(self.system_instruction,processed_prompt)
-            print(f"DEBUG: Response: {response}")
+            #print(f"DEBUG: Response: {response}")
             processed_response = self.defense_manager.process_output(response)
             #completed = self.is_completed(response)
-            print(f"DEBUG: Processed response: {processed_response}")
+            #print(f"DEBUG: Processed response: {processed_response}")
             return ChallengeResponse(
                 response = processed_response,
                 secret_key=self._key,

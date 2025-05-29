@@ -33,16 +33,12 @@ class DefenseManager():
     def _load_plugins(self,plugin_name:str)->None:
         """Load all plugins from the plugins directory"""
         try:
-            file_path = os.path.join(self.plugins_dir, f"{plugin_name}.py")
-            #print(f"DEBUG: Attempting to load plugin from {file_path}")
-            
+            file_path = os.path.join(self.plugins_dir, f"{plugin_name}.py")       
             if not os.path.exists(file_path):
-                #print(f"DEBUG: Plugin file {file_path} does not exist")
                 return None
                 
             spec = importlib.util.spec_from_file_location(plugin_name,file_path)            
             if spec is None or spec.loader is None:
-                #print(f"DEBUG: Failed to create spec for {plugin_name}")
                 return None
             
             module = importlib.util.module_from_spec(spec)
@@ -52,14 +48,10 @@ class DefenseManager():
             for attr_name in dir(module):
                 attr = getattr(module,attr_name)
                 if(isinstance(attr,type) and issubclass(attr,DefensePlugin) and attr != DefensePlugin):
-                    print(f"DEBUG: Successfully loaded plugin class {attr_name}")
                     return attr()
-            
-            print(f"DEBUG: No valid plugin class found in {plugin_name}")
             return None
         except Exception as e:
-            print(f"DEBUG: Error loading plugin {plugin_name}: {str(e)}")
-            return None
+            return e
     
     def _save_plugin(self,plugin_name:str,code:str)->None:
         """Save the plugin code to the plugins directory"""
