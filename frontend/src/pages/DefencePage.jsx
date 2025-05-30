@@ -56,27 +56,27 @@ class CustomDefensePlugin(DefensePlugin):
         return output`);
             
 
-  // 新增状态
-  const [plugins, setPlugins] = useState([]);  // 插件列表
-  const [selectedPlugin, setSelectedPlugin] = useState(null);  // 当前选中的插件
-  const [isUploading, setIsUploading] = useState(false);  // 上传中状态
-  const [isDeploying, setIsDeploying] = useState(false);  // 部署中状态
-  const [isDeleting, setIsDeleting] = useState(false);  // 删除中状态
-  const [pluginToDelete, setPluginToDelete] = useState(null);  // 要删除的插件
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);  // 删除确认对话框开关
-  const [snackbarOpen, setSnackbarOpen] = useState(false); // Snackbar开关
-  const [snackbarMessage, setSnackbarMessage] = useState(''); // Snackbar消息
-  const [snackbarSeverity, setSnackbarSeverity] = useState('info'); // Snackbar类型
-  const [deployDialogOpen, setDeployDialogOpen] = useState(false); // 部署确认对话框开关
-  const [pluginToActivate, setPluginToActivate] = useState(null); // 要激活的插件
-  const [menuAnchorEl, setMenuAnchorEl] = useState(null); // 菜单锚点
-  const [activePluginForMenu, setActivePluginForMenu] = useState(null); // 当前菜单对应的插件
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // 是否有未保存的更改
-  const [originalCode, setOriginalCode] = useState(''); // 原始代码，用于检测更改
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false); // 确认对话框开关
-  const [pendingAction, setPendingAction] = useState(null); // 等待确认的操作
+  // new states
+  const [plugins, setPlugins] = useState([]);  // plugin list
+  const [selectedPlugin, setSelectedPlugin] = useState(null);  // currently selected plugin
+  const [isUploading, setIsUploading] = useState(false);  // uploading status
+  const [isDeploying, setIsDeploying] = useState(false);  // deploying status
+  const [isDeleting, setIsDeleting] = useState(false);  // deleting status
+  const [pluginToDelete, setPluginToDelete] = useState(null);  // plugin to delete
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);  // delete confirmation dialog switch
+  const [snackbarOpen, setSnackbarOpen] = useState(false); // Snackbar switch
+  const [snackbarMessage, setSnackbarMessage] = useState(''); // Snackbar message
+  const [snackbarSeverity, setSnackbarSeverity] = useState('info'); // Snackbar type
+  const [deployDialogOpen, setDeployDialogOpen] = useState(false); // deploy confirmation dialog switch
+  const [pluginToActivate, setPluginToActivate] = useState(null); // plugin to activate
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null); // menu anchor point
+  const [activePluginForMenu, setActivePluginForMenu] = useState(null); // plugin corresponding to current menu
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // whether there are unsaved changes
+  const [originalCode, setOriginalCode] = useState(''); // original code, for detecting changes
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false); // confirm dialog switch
+  const [pendingAction, setPendingAction] = useState(null); // pending action to confirm
 
-  // 获取所有插件
+  // get all plugins
   const fetchPlugins = async () => {
     try {
       const response = await fetch('http://localhost:8001/defender/defenses');
@@ -84,12 +84,12 @@ class CustomDefensePlugin(DefensePlugin):
         const data = await response.json();
         setPlugins(data);
         
-        // 只在首次加载且没有选中插件时，自动选择第一个
+        // automatically select the first plugin only when loading for the first time and no plugin is selected
         if (data.length > 0 && !selectedPlugin && document.readyState === 'complete' && !hasUnsavedChanges) {
           setSelectedPlugin(data[0].name);
         }
         
-        console.log("Plugins fetched:", data); // 添加日志以便调试
+        console.log("Plugins fetched:", data); // add log for debugging
       } else {
         console.error('Failed to fetch plugins:', response.status, response.statusText);
       }
@@ -98,26 +98,26 @@ class CustomDefensePlugin(DefensePlugin):
     }
   };
 
-  // 组件加载时获取插件列表
+  // get plugin list when component loads
   useEffect(() => {
     fetchPlugins();
   }, []);
 
-  // 当选择插件时，加载其代码
+  // load plugin code when selecting a plugin
   useEffect(() => {
     if (selectedPlugin && plugins.length > 0) {
-      // 检查选中的插件是否存在于列表中
+      // check if the selected plugin exists in the list
       const pluginExists = plugins.some(p => p.name === selectedPlugin);
       if (pluginExists) {
         fetchPluginCode(selectedPlugin);
       } else {
-        // 如果选中的插件不存在于列表中，清除选择
+        // if the selected plugin does not exist in the list, clear the selection
         setSelectedPlugin(null);
       }
     }
   }, [selectedPlugin]);
 
-  // 获取插件代码
+  // get plugin code
   const fetchPluginCode = async (pluginName) => {
     if (!pluginName) {
       console.error('fetchPluginCode called with empty pluginName');
@@ -127,13 +127,13 @@ class CustomDefensePlugin(DefensePlugin):
     console.log(`Fetching code for plugin: ${pluginName}`);
     
     try {
-      // 从插件目录中读取文件内容
+      // read file content from plugin directory
       const encodedName = encodeURIComponent(pluginName.trim());
       const response = await fetch(`http://localhost:8001/defender/defenses/${encodedName}`);
       if (response.ok) {
         const data = await response.json();
         
-        // 尝试获取插件代码
+        // try to get plugin code
         try {
           const codeResponse = await fetch(`http://localhost:8001/defender/defenses/${encodedName}/code`);
           if (codeResponse.ok) {
@@ -144,7 +144,7 @@ class CustomDefensePlugin(DefensePlugin):
               setOriginalCode(codeData.code);
               setHasUnsavedChanges(false);
               
-              // 更新插件列表中的信息
+              // update information in plugin list
               setPlugins(prevPlugins => {
                 const updatedPlugins = [...prevPlugins];
                 const index = updatedPlugins.findIndex(p => p.name === pluginName);
@@ -175,38 +175,38 @@ class CustomDefensePlugin(DefensePlugin):
     }
   };
 
-  // 显示Snackbar通知
+  // display Snackbar notification
   const showSnackbar = (message, severity = 'info') => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
   };
 
-  // 关闭Snackbar
+  // close Snackbar
   const handleCloseSnackbar = (event, reason) => {
     if (reason === 'clickaway') return;
     setSnackbarOpen(false);
   };
 
-  // 上传插件
+  // upload plugin
   const handleUpload = async () => {
     if (!code.trim()) return;
     
     setIsUploading(true);
     
     try {
-      // 从代码中提取名称和描述
+      // extract name and description from code
       const nameMatch = code.match(/self\.name\s*=\s*["']([^"']+)["']/);
       const descriptionMatch = code.match(/self\.description\s*=\s*["']([^"']+)["']/);
       
-      // 获取新的插件名称
+      // get new plugin name
       const newPluginName = nameMatch ? nameMatch[1].trim() : 'custom_defense';
       const pluginDescription = descriptionMatch ? descriptionMatch[1].trim() : 'A custom defense plugin';
       
-      // 检查是否是更新现有插件
+      // check if it is updating an existing plugin
       const isUpdate = selectedPlugin && plugins.some(plugin => plugin.name === selectedPlugin);
       
-      // 检查是否发生了重命名
+      // check if it is renaming
       const isRenaming = isUpdate && selectedPlugin !== newPluginName;
 
       if(!newPluginName) {
@@ -215,19 +215,19 @@ class CustomDefensePlugin(DefensePlugin):
         return;
       }
       
-      // 如果是新插件或重命名，检查新名称是否已存在
+      // if it is a new plugin or renaming, check if the new name already exists
       if ((!isUpdate || isRenaming) && plugins.some(plugin => plugin.name === newPluginName)) {
         showSnackbar(`Plugin name "${newPluginName}" already exists. Please choose another name.`, 'error');
         setIsUploading(false);
         return;
       }
       
-      // 创建文件对象
+      // create file object
       const file = new Blob([code], { type: 'text/plain' });
       const formData = new FormData();
       formData.append('file', file, 'defense_plugin.py');
       
-      // 如果是重命名，先删除旧插件
+      // if it is renaming, delete the old plugin first
       if (isRenaming) {
         try {
           const deleteResponse = await fetch(`http://localhost:8001/defender/defenses/${encodeURIComponent(selectedPlugin)}`, {
@@ -244,7 +244,7 @@ class CustomDefensePlugin(DefensePlugin):
         }
       }
       
-      // 上传插件（使用新名称）
+      // upload plugin (using new name)
       const url = `http://localhost:8001/defender/defenses/upload?plugin_name=${encodeURIComponent(newPluginName)}`;
       
       const response = await fetch(url, {
@@ -259,11 +259,11 @@ class CustomDefensePlugin(DefensePlugin):
       
       const result = await response.json();
       
-      // 更新本地状态
+      // update local state
       setPlugins(prevPlugins => {
         const updatedPlugins = [...prevPlugins];
         if (isRenaming) {
-          // 如果是重命名，删除旧插件并添加新插件
+          // if it is renaming, delete the old plugin and add the new plugin
           const oldIndex = updatedPlugins.findIndex(p => p.name === selectedPlugin);
           if (oldIndex !== -1) {
             updatedPlugins.splice(oldIndex, 1);
@@ -277,10 +277,10 @@ class CustomDefensePlugin(DefensePlugin):
             }
           });
         } else {
-          // 更新或添加插件
+          // update or add plugin
           const index = updatedPlugins.findIndex(p => p.name === (isUpdate ? selectedPlugin : newPluginName));
           if (index !== -1) {
-            // 更新现有插件
+            // update existing plugin
             updatedPlugins[index] = {
               ...updatedPlugins[index],
               name: newPluginName,
@@ -291,7 +291,7 @@ class CustomDefensePlugin(DefensePlugin):
               }
             };
           } else {
-            // 添加新插件
+            // add new plugin
             updatedPlugins.push({
               name: newPluginName,
               description: pluginDescription,
@@ -305,7 +305,7 @@ class CustomDefensePlugin(DefensePlugin):
         return updatedPlugins;
       });
 
-      // 更新选中的插件为新名称
+      // update the selected plugin to the new name
       setSelectedPlugin(newPluginName);
       
       showSnackbar(
@@ -317,14 +317,14 @@ class CustomDefensePlugin(DefensePlugin):
         'success'
       );
 
-      // 重置未保存状态
+      // reset unsaved state
       setOriginalCode(code);
       setHasUnsavedChanges(false);
       
-      // 从后端获取最新的插件信息，但保持当前选中的插件
-      const currentSelected = newPluginName;  // 保存当前选中的插件名称
+      // get the latest plugin information from the backend, but keep the currently selected plugin
+      const currentSelected = newPluginName;  // save the name of the currently selected plugin
       await fetchPlugins();
-      setSelectedPlugin(currentSelected);  // 重新设置选中的插件
+      setSelectedPlugin(currentSelected);  // reset the selected plugin
       
     } catch (error) {
       console.error('Upload error:', error);
@@ -334,44 +334,44 @@ class CustomDefensePlugin(DefensePlugin):
     }
   };
 
-  // 打开部署确认对话框
+  // open deploy confirmation dialog
   const handleOpenDeployDialog = () => {
     if (!selectedPlugin) {
       showSnackbar('Please select a plugin to deploy', 'info');
       return;
     }
     
-    // 如果当前选中的插件已经是激活状态，直接执行取消激活操作
+    // if the currently selected plugin is already activated, execute the deactivate operation directly
     if (getSelectedPluginStatus()) {
       executeDeployAction();
       return;
     }
     
-    // 找出当前激活的插件
+    // find the currently activated plugin
     const activePlugin = plugins.find(plugin => plugin.info?.is_active);
     
-    // 如果有已激活的插件，显示确认对话框
+    // if there is an activated plugin, display the confirmation dialog
     if (activePlugin) {
       setPluginToActivate(selectedPlugin);
       setDeployDialogOpen(true);
     } else {
-      // 如果没有已激活的插件，直接执行激活操作
+      // if there is no activated plugin, execute the activate operation directly
       executeDeployAction();
     }
   };
 
-  // 关闭部署确认对话框
+  // close deploy confirmation dialog
   const handleCloseDeployDialog = () => {
     setDeployDialogOpen(false);
     setPluginToActivate(null);
   };
 
-  // 实际执行部署操作
+  // actually execute the deploy operation
   const executeDeployAction = async () => {
     setIsDeploying(true);
     
     try {
-      // 使用查询参数方式传递plugin_name
+      // use query parameter to pass plugin_name
       const response = await fetch(`http://localhost:8001/defender/defenses/toggle?plugin_name=${selectedPlugin}`, {
         method: 'POST',
       });
@@ -389,15 +389,14 @@ class CustomDefensePlugin(DefensePlugin):
         throw new Error(errorMessage);
       }
       
-      // 即使显示错误，后端可能已经成功处理了请求
-      // 所以无论成功还是失败，都刷新插件列表
+      // refresh the plugin list
       await fetchPlugins();
       
-      // 获取当前选中插件的状态
+      // get the status of the currently selected plugin
       const updatedPlugin = plugins.find(p => p.name === selectedPlugin);
       const isActive = updatedPlugin?.info?.is_active;
       
-      // 只有在确认请求成功后才显示成功消息
+      // only show success message after confirming the request succeeds
       showSnackbar(
         isActive 
           ? `Plugin "${selectedPlugin}" activated successfully!` 
@@ -407,7 +406,7 @@ class CustomDefensePlugin(DefensePlugin):
     } catch (error) {
       console.error('Deploy error:', error);
       
-      // 尝试刷新插件列表，以防后端操作已成功但只是响应出错
+      // try to refresh the plugin list, in case the backend operation has succeeded but the response is wrong
       try {
         await fetchPlugins();
       } catch (refreshError) {
@@ -420,43 +419,43 @@ class CustomDefensePlugin(DefensePlugin):
     }
   };
 
-  // 激活插件
+  // activate plugin
   const handleDeploy = () => {
     handleOpenDeployDialog();
   };
 
-  // 获取当前选中插件的状态
+  // get the status of the currently selected plugin
   const getSelectedPluginStatus = () => {
     const plugin = plugins.find(p => p.name === selectedPlugin);
     return plugin?.info?.is_active || false;
   };
 
-  // 检查插件是否处于激活状态
+  // check if the plugin is activated
   const isPluginActive = (pluginName) => {
     const plugin = plugins.find(p => p.name === pluginName);
     return plugin?.info?.is_active || false;
   };
 
-  // 检查当前插件是否可编辑
+  // check if the current plugin is editable
   const isCurrentPluginEditable = () => {
-    // 新建插件或未激活的已有插件可以编辑
+    // new plugin or non-activated existing plugin can be edited
     return !selectedPlugin || (selectedPlugin && !isPluginActive(selectedPlugin));
   };
 
-  // 打开删除确认对话框
+  // open delete confirmation dialog
   const handleOpenDeleteDialog = (event, pluginName) => {
-    event.stopPropagation(); // 阻止事件冒泡，避免触发选中插件
+    event.stopPropagation(); // prevent event bubbling, avoid triggering the selected plugin
     setPluginToDelete(pluginName);
     setDeleteDialogOpen(true);
   };
 
-  // 关闭删除确认对话框
+  // close delete confirmation dialog
   const handleCloseDeleteDialog = () => {
     setDeleteDialogOpen(false);
     setPluginToDelete(null);
   };
 
-  // 统一处理切换到其他插件的逻辑
+  // handle switching to other plugins
   const switchToPlugin = (pluginName, actionAfterSwitch = null, skipConfirmation = false) => {
     const switchAction = () => {
       setSelectedPlugin(pluginName);
@@ -468,13 +467,13 @@ class CustomDefensePlugin(DefensePlugin):
       }
     };
 
-    // 如果skipConfirmation为true，直接执行切换
+    // if skipConfirmation is true, execute the switch directly
     if (skipConfirmation) {
       switchAction();
       return;
     }
 
-    // 检查是否有未保存的更改
+    // check if there are unsaved changes
     if ((hasUnsavedChanges && code.trim() !== originalCode.trim()) || 
         (!selectedPlugin && code.trim() === defaultTemplate.trim())) {
       setPendingAction({ action: switchAction, args: [] });
@@ -484,7 +483,7 @@ class CustomDefensePlugin(DefensePlugin):
     }
   };
 
-  // 处理选择插件
+  // handle selecting a plugin
   const handleSelectPlugin = (pluginName) => {
     // Don't do anything if clicking the already selected plugin
     if (pluginName === selectedPlugin) {
@@ -493,7 +492,7 @@ class CustomDefensePlugin(DefensePlugin):
     switchToPlugin(pluginName);
   };
 
-  // 处理删除插件
+  // handle deleting a plugin
   const handleDeletePlugin = async () => {
     if (!pluginToDelete) return;
     
@@ -509,15 +508,15 @@ class CustomDefensePlugin(DefensePlugin):
         throw new Error(error.detail || 'Failed to delete plugin');
       }
       
-      // 如果删除的是当前选中的插件，清空选中状态
+      // if the deleted plugin is the currently selected plugin, clear the selected state
       if (selectedPlugin === pluginToDelete) {
         setSelectedPlugin(null);
       }
       
-      // 首先直接从本地状态中移除该插件
+      // first remove the plugin directly from the local state
       setPlugins(prevPlugins => prevPlugins.filter(plugin => plugin.name !== pluginToDelete));
       
-      // 然后再从服务器获取最新的插件列表
+      // then get the latest plugin list from the server
       await fetchPlugins();
       
       showSnackbar(`Plugin "${pluginToDelete}" deleted successfully!`, 'success');
@@ -530,28 +529,28 @@ class CustomDefensePlugin(DefensePlugin):
     }
   };
 
-  // 打开菜单
+  // open menu
   const handleOpenMenu = (event, pluginName) => {
     event.stopPropagation();
     setMenuAnchorEl(event.currentTarget);
     setActivePluginForMenu(pluginName);
   };
 
-  // 关闭菜单
+  // close menu
   const handleCloseMenu = () => {
     setMenuAnchorEl(null);
     setActivePluginForMenu(null);
   };
 
-  // 处理开关切换
+  // handle toggle switch
   const handleToggleSwitch = async (event, pluginName) => {
     event.stopPropagation();
 
-    // 创建切换操作函数
+    // create toggle operation function
     const executeToggle = async () => {
       setIsDeploying(true);
       try {
-        // 先获取插件当前状态
+        // get the current status of the plugin
         const currentPlugin = plugins.find(p => p.name === pluginName);
         const willBeActive = !currentPlugin?.info?.is_active;
 
@@ -570,10 +569,10 @@ class CustomDefensePlugin(DefensePlugin):
           throw new Error(errorMessage);
         }
 
-        // 先刷新插件列表以获取最新状态
+        // refresh the plugin list to get the latest status
         await fetchPlugins();
         
-        // 如果切换的不是当前选中的插件，切换到该插件（跳过确认）
+        // if the switch is not the currently selected plugin, switch to it (skip confirmation)
         if (selectedPlugin !== pluginName) {
           switchToPlugin(pluginName, null, true);
         }
@@ -598,7 +597,7 @@ class CustomDefensePlugin(DefensePlugin):
       }
     };
 
-    // 检查是否有未保存的更改
+    // check if there are unsaved changes
     if ((hasUnsavedChanges && code.trim() !== originalCode.trim()) || 
         (!selectedPlugin && code.trim() === defaultTemplate.trim())) {
       setPendingAction({ action: executeToggle, args: [] });
@@ -608,16 +607,16 @@ class CustomDefensePlugin(DefensePlugin):
     }
   };
 
-  // 创建新插件
+  // create new plugin
   const handleCreateNew = () => {
     const createNewPlugin = () => {
       setSelectedPlugin(null);
       setCode(defaultTemplate);
-      setOriginalCode('');  // 设置为空字符串，这样新建的模板会被视为未保存的更改
-      setHasUnsavedChanges(true);  // 直接设置为未保存状态
+      setOriginalCode('');  // set to empty string, so the new template will be considered unsaved changes
+      setHasUnsavedChanges(true);  // set to unsaved state directly
     };
 
-    // 检查是否有未保存的更改
+    // check if there are unsaved changes
     if (hasUnsavedChanges && code.trim() !== originalCode.trim()) {
       setPendingAction({ action: createNewPlugin, args: [] });
       setConfirmDialogOpen(true);
@@ -626,7 +625,7 @@ class CustomDefensePlugin(DefensePlugin):
     }
   };
 
-  // 丢弃新插件
+  // discard new plugin
   const handleDiscardNew = () => {
     setCode('');
     setOriginalCode('');
@@ -651,7 +650,7 @@ class CustomDefensePlugin(DefensePlugin):
         boxSizing: 'border-box',
       }}
     >
-      {/* Snackbar通知 */}
+      {/* Snackbar notification */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
@@ -668,7 +667,7 @@ class CustomDefensePlugin(DefensePlugin):
         </Alert>
       </Snackbar>
       
-      {/* 删除确认对话框 */}
+      {/* delete confirmation dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={handleCloseDeleteDialog}
@@ -700,7 +699,7 @@ class CustomDefensePlugin(DefensePlugin):
         </DialogActions>
       </Dialog>
       
-      {/* 部署确认对话框 */}
+      {/* deploy confirmation dialog */}
       <Dialog
         open={deployDialogOpen}
         onClose={handleCloseDeployDialog}
@@ -739,7 +738,7 @@ class CustomDefensePlugin(DefensePlugin):
         </DialogActions>
       </Dialog>
       
-      {/* 未保存更改确认对话框 */}
+      {/* unsaved changes confirmation dialog */}
       <Dialog
         open={confirmDialogOpen}
         onClose={() => setConfirmDialogOpen(false)}
@@ -781,7 +780,7 @@ class CustomDefensePlugin(DefensePlugin):
         </DialogActions>
       </Dialog>
       
-      {/* 背景装饰圆形 */}
+      {/* background decoration circle */}
       <Box
         sx={{
           position: 'absolute',
@@ -831,9 +830,9 @@ class CustomDefensePlugin(DefensePlugin):
         }}
       />
 
-      {/* 内容区域 */}
+      {/* content area */}
       <Box sx={{ width: '100%', maxWidth: '1200px', zIndex: 1, height: 'calc(100% - 20px)', display: 'flex', flexDirection: 'column' }}>
-        {/* 返回按钮和标题 */}
+        {/* return button and title */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <IconButton 
             onClick={() => navigate('/defencelist')} 
@@ -852,16 +851,16 @@ class CustomDefensePlugin(DefensePlugin):
           </Typography>
         </Box>
 
-        {/* 说明文本 */}
+        {/* description text */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ color: '#eee' }}>
             Insert a Python middleware before the LLaMA call, and apply detection logic after the model responds.
         </Typography>
       </Box>
 
-        {/* 左右布局容器 */}
+        {/* left and right layout container */}
         <Box sx={{ display: 'flex', gap: 3, flex: 1, overflow: 'hidden' }}>
-          {/* 左侧插件列表 */}
+          {/* left plugin list */}
           <Box
             sx={{
               width: '350px',
@@ -980,7 +979,7 @@ class CustomDefensePlugin(DefensePlugin):
               </List>
             )}
 
-            {/* 添加导航提示 - 当有激活的插件时显示 */}
+            {/* add navigation hint - show when there is an activated plugin */}
             {plugins.some(plugin => plugin.info?.is_active) && (
               <Box 
                 sx={{ 
@@ -1023,7 +1022,7 @@ class CustomDefensePlugin(DefensePlugin):
             )}
           </Box>
 
-          {/* 右侧代码编辑器 */}
+          {/* right code editor */}
           <Box
             sx={{
               flex: 1,
@@ -1056,24 +1055,24 @@ class CustomDefensePlugin(DefensePlugin):
                 </Box>
               )}
                 {selectedPlugin ? (
-                  // 已有插件显示只读标题
+                  // existing plugin shows read-only title
                   <Typography variant="h6" sx={{ color: 'white', mb: 1 }}>
                     {`${selectedPlugin}.py`}
                   </Typography>
                 ) : (
-                  // 新建插件显示只读标题
+                  // new plugin shows read-only title
                   <Typography variant="h6" sx={{ color: 'white', mb: 1 }}>
                     {`Custom Defense.py`}
                   </Typography>
                 )}
                 
                 {selectedPlugin ? (
-                  // 已有插件显示只读描述
+                  // existing plugin shows read-only description
                   <Typography variant="body2" sx={{ color: '#aaa' }}>
                     {plugins.find(p => p.name === selectedPlugin)?.description || 'Python middleware plugin'}
                   </Typography>
                 ) : (
-                  // 新建插件显示只读描述
+                  // new plugin shows read-only description
                   <Typography variant="body2" sx={{ color: '#aaa' }}>
                     {'A custom defense plugin'}
                   </Typography>
@@ -1091,7 +1090,7 @@ class CustomDefensePlugin(DefensePlugin):
                   onChange={(e) => {
                     if (isCurrentPluginEditable()) {
                       setCode(e.target.value);
-                      // Only mark as unsaved if there's an actual difference
+                      // only mark as unsaved if there's an actual difference
                       const newCode = e.target.value;
                       const hasChanges = newCode.trim() !== originalCode.trim();
                       setHasUnsavedChanges(hasChanges);
@@ -1144,7 +1143,7 @@ class CustomDefensePlugin(DefensePlugin):
                       >
                         {isDeleting ? <CircularProgress size={24} color="inherit" /> : 'Delete'}
                       </Button>
-                      {/* 始终显示Discard changes按钮，但根据状态禁用 */}
+                      {/* always show Discard changes button, but disable based on status */}
                       <Button
                         variant="outlined"
                         onClick={() => {
@@ -1224,7 +1223,7 @@ class CustomDefensePlugin(DefensePlugin):
           </Box>
         </Box>
         
-        {/* 插件操作菜单 */}
+        {/* plugin operation menu */}
         <Menu
           anchorEl={menuAnchorEl}
           open={Boolean(menuAnchorEl)}

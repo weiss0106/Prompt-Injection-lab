@@ -14,7 +14,7 @@ export default function ModeSelectPage() {
   const isDefenceUnlocked = userScore.attacker_score >= 3;
   const [hasActiveDefense, setHasActiveDefense] = useState(false);
 
-  // 获取用户分数
+  // get user score
   useEffect(() => {
     async function fetchUserScore() {
       try {
@@ -31,7 +31,7 @@ export default function ModeSelectPage() {
     fetchUserScore();
   }, []);
 
-  // 检查防御插件状态
+  // check defense plugin status
   useEffect(() => {
     async function checkDefensePlugins() {
       try {
@@ -48,14 +48,14 @@ export default function ModeSelectPage() {
     checkDefensePlugins();
   }, []);
 
-  // 加载动画文件
+  // load animation files
   useEffect(() => {
-    // 加载 attack 动画
+    // load attack animation
     fetch('./animations/attack.json')
       .then(response => response.json())
       .then(data => {
         setAttackAnimation(data);
-        // 设置随机起始帧
+        // set random starting frame
         setTimeout(() => {
           if (attackLottieRef.current?.animationItem) {
             const totalFrames = attackLottieRef.current.animationItem.totalFrames;
@@ -66,12 +66,12 @@ export default function ModeSelectPage() {
       })
       .catch(error => console.error('Error loading attack animation:', error));
 
-    // 加载 defence 动画
+    // load defence animation
     fetch('./animations/defence.json')
       .then(response => response.json())
       .then(data => {
         setDefenceAnimation(data);
-        // 根据解锁状态设置动画
+        // set animation based on unlock status
         setTimeout(() => {
           if (defenceLottieRef.current?.animationItem) {
             if (isDefenceUnlocked) {
@@ -87,7 +87,7 @@ export default function ModeSelectPage() {
       .catch(error => console.error('Error loading defence animation:', error));
   }, [isDefenceUnlocked]);
 
-  // 监听解锁状态变化
+  // listen to unlock status change
   useEffect(() => {
     if (defenceLottieRef.current?.animationItem) {
       if (isDefenceUnlocked) {
@@ -104,7 +104,7 @@ export default function ModeSelectPage() {
     try {
       console.log('Starting handleAttackContinue...');
       
-      // 获取所有挑战和分数
+      // get all challenges and scores
       const challengesResponse = await fetch('http://localhost:8001/attacker/');
       const scoreResponse = await fetch('http://localhost:8001/attacker/score');
       const defenseResponse = await fetch('http://localhost:8001/defender/defenses');
@@ -114,28 +114,20 @@ export default function ModeSelectPage() {
         const scoreData = await scoreResponse.json();
         const defensePlugins = await defenseResponse.json();
         
-        console.log('Challenges:', challengesData);
-        console.log('Score:', scoreData);
-        console.log('Defense Plugins:', defensePlugins);
-        
-        // 检查是否完成了前三个挑战
+        // check if the first three challenges are completed
         const hasCompletedIndirect = scoreData.attacker_score >= 3;
         
-        // 根据分数找到第一个未完成的挑战
+        // find the first uncompleted challenge based on score
         const firstUncompletedChallenge = challengesData.find((challenge, index) => {
-          // 如果当前分数小于等于当前挑战的索引，说明这个挑战还没完成
+          // if current score is less than or equal to the index of the current challenge, this challenge is not completed
           return index >= scoreData.attacker_score;
         });
 
-        console.log('First uncompleted challenge:', firstUncompletedChallenge);
-
         if (firstUncompletedChallenge) {
-          // 如果有未完成的普通挑战，进入该挑战
-          console.log('Navigating to challenge:', firstUncompletedChallenge.id);
+          // if there is an uncompleted challenge, enter the challenge
           navigate(`/attack/${firstUncompletedChallenge.id}`);
         } else if (hasCompletedIndirect) {
-          // 如果完成了前三个挑战，直接进入final challenge
-          console.log('Navigating to final challenge');
+          // if the first three challenges are completed, enter the final challenge
           navigate('/attack/final');
         }
       }
@@ -163,12 +155,12 @@ export default function ModeSelectPage() {
       }}
     >
 
-      {/* 背景渐变圆形装饰 */}
+      {/* background gradient circle decoration */}
       <Box sx={{ position: 'absolute', width: '30vw', height: '30vh', borderRadius: '50%', background: 'radial-gradient(circle,rgb(112, 2, 163), transparent)', top: '10%', left: '5%', filter: 'blur(70px)', zIndex: 0, opacity: 0.4 }} />
       <Box sx={{ position: 'absolute', width: '26vw', height: '20vh', borderRadius: '50%', background: 'radial-gradient(circle,rgb(69, 28, 157), transparent)', top: '10%', right: '10%', filter: 'blur(70px)', zIndex: 0, opacity: 0.3 }} />
       <Box sx={{ position: 'absolute', width: '30vw', height: '30vh', borderRadius: '50%', background: 'radial-gradient(circle,rgb(56, 20, 132), transparent)', bottom: '10%', right: '30%', filter: 'blur(70px)', zIndex: 0, opacity: 0.5 }} />
 
-      {/* 标题部分 */}
+      {/* title section */}
       <Box sx={{ textAlign: 'center', mb: 6, zIndex: 1, position: 'relative', width: '100%', maxWidth: '1200px' }}>
         <IconButton
           onClick={() => navigate('/')}
@@ -199,7 +191,7 @@ export default function ModeSelectPage() {
         </Typography>
       </Box>
 
-      {/* 模式选择卡片区域 */}
+      {/* mode selection card area */}
       <Box sx={{ 
         width: '100%',
         maxWidth: '1200px',
@@ -354,7 +346,7 @@ export default function ModeSelectPage() {
                   <Box sx={{ color: '#fff' }}>Loading animation...</Box>
                 )}
               </Box>
-              <Typography variant="h6" sx={{ color: '#fff', mb: 4, fontWeight: 600 }}>Defence</Typography>
+              <Typography variant="h6" sx={{ color: '#fff', mb: 4, fontWeight: 600 }}>Defense</Typography>
             </Box>
             <Box>
               <Button

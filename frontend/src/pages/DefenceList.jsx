@@ -21,7 +21,7 @@ export default function DefenceList() {
         py: 6,
       }}
     >
-      {/* 背景装饰圆形 */}
+      {/* background decoration circle */}
       <Box
         sx={{
           position: 'absolute',
@@ -71,7 +71,7 @@ export default function DefenceList() {
         }}
       />
 
-      {/* 🧢 页面顶部标题部分 */}
+      {/* 🧢 page top title part */}
       <Box sx={{ textAlign: 'center', mb: 8, zIndex: 1, width: '100%', maxWidth: '1200px', position: 'relative' }}>
         <IconButton 
           onClick={() => navigate('/modes')} 
@@ -102,7 +102,7 @@ export default function DefenceList() {
         </Typography>
       </Box>
 
-      {/* 🧊 内容卡片部分（防御策略列表） */}
+      {/* 🧊 content card part (defence strategy list) */}
       <Box
         sx={{
           width: '100%',
@@ -116,14 +116,14 @@ export default function DefenceList() {
           zIndex: 1,
         }}
       >
-        {/* 标题和返回按钮 */}
+        {/* title and return button */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, color: 'white' }}>
             Defence Strategies
           </Typography>
         </Box>
 
-        {/* System Prompt Strengthen Card */}
+        {/* system prompt strengthen card */}
         <Card 
           sx={{ 
             backgroundColor: 'rgba(30, 30, 45, 0.4)', 
@@ -134,7 +134,7 @@ export default function DefenceList() {
             position: 'relative',
           }}
         >
-          {/* Overlay to indicate feature is coming soon */}
+          {/* overlay to indicate feature is coming soon */}
           <Box
             sx={{
               position: 'absolute',
@@ -162,7 +162,7 @@ export default function DefenceList() {
                 mr: 2.5
               }}
             >
-              {/* 可以添加图标 */}
+              {/* can add icon */}
             </Avatar>
             <Box>
               <Typography variant="h6" sx={{ color: 'white', fontWeight: 500, opacity: 0.8 }}>
@@ -175,7 +175,7 @@ export default function DefenceList() {
           </CardContent>
         </Card>
 
-        {/* Python Middle Layer Card */}
+        {/* python middle layer card */}
         <Card 
           sx={{ 
             backgroundColor: 'rgba(30, 30, 45, 0.6)', 
@@ -199,7 +199,7 @@ export default function DefenceList() {
                 mr: 2.5
               }}
             >
-              {/* 可以添加图标 */}
+              {/* can add icon */}
             </Avatar>
             <Box>
               <Typography variant="h6" sx={{ color: 'white', fontWeight: 500 }}>

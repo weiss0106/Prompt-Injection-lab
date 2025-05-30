@@ -46,7 +46,7 @@ export default function AttackPage() {
   const navigate = useNavigate();
   const { challengeId = 'c1' } = useParams(); // 从URL获取挑战ID，默认为c1
 
-  // 定义允许的文件类型
+  // define allowed file types
   const ALLOWED_FILE_TYPES = {
     '.txt': 'Text file',
     '.md': 'Markdown',
@@ -57,24 +57,24 @@ export default function AttackPage() {
     '.csv': 'CSV file',
   };
   
-  // 检查文件类型是否允许
+  // check if file type is allowed
   const isFileTypeAllowed = (file) => {
     const fileName = file.name.toLowerCase();
     return Object.keys(ALLOWED_FILE_TYPES).some(ext => fileName.endsWith(ext));
   };
 
-  // 获取所有挑战以及用户分数信息
+  // get all challenges and user score information
   useEffect(() => {
     async function fetchChallengesAndScore() {
       try {
-        // 获取所有挑战
+        // get all challenges
         const challengesResponse = await fetch('http://localhost:8001/attacker/');
         if (challengesResponse.ok) {
           const challengesData = await challengesResponse.json();
           setAllChallenges(challengesData);
         }
         
-        // 获取用户分数
+        // get user score
         const scoreResponse = await fetch('http://localhost:8001/attacker/score');
         if (scoreResponse.ok) {
           const scoreData = await scoreResponse.json();
@@ -88,7 +88,7 @@ export default function AttackPage() {
     fetchChallengesAndScore();
   }, []);
 
-  // 获取挑战信息
+  // get challenge information
   useEffect(() => {
     async function fetchChallengeInfo() {
       try {
@@ -96,7 +96,7 @@ export default function AttackPage() {
         if (response.ok) {
           const data = await response.json();
           setChallengeInfo(data);
-          // 重置所有对话状态
+          // reset all dialog states
           setQuestion('');
           setResponse('');
           setAnswer('');
@@ -111,7 +111,7 @@ export default function AttackPage() {
     fetchChallengeInfo();
   }, [challengeId]);
 
-  // 获取防御插件信息
+  // get defense plugin information
   useEffect(() => {
     async function fetchDefensePlugins() {
       try {
@@ -128,7 +128,7 @@ export default function AttackPage() {
     fetchDefensePlugins();
   }, []);
 
-  // 检查防御插件是否激活
+  // check if defense plugin is activated
   useEffect(() => {
     async function checkDefensePlugins() {
       if (challengeId === 'final') {
@@ -148,7 +148,7 @@ export default function AttackPage() {
     checkDefensePlugins();
   }, [challengeId]);
 
-  // 计算进度百分比
+  // calculate progress percentage
   const calculateProgress = () => {
     if (allChallenges.length === 0) return 0;
     return (userScore.attacker_score / allChallenges.length) * 100;
@@ -177,8 +177,8 @@ export default function AttackPage() {
       const data = await response.json();
       setResponse(data.response);
       
-      // 不再自动设置完成状态
-      // 后续由用户提交答案后判断
+      // no longer automatically set completion status
+      // subsequent judgment is done after the user submits the answer
     } catch (err) {
       console.error('Error calling API:', err);
     } finally {
@@ -201,29 +201,29 @@ export default function AttackPage() {
         },
       });
       
-      // 根据响应状态设置正确或错误
+      // set correct or incorrect based on response status
       if (response.ok) {
         const data = await response.json();
         setIsCorrect(true);
         setCompleted(true);
         
-        // 重新获取用户分数以更新进度条
+        // re-get user score to update progress bar
         const scoreResponse = await fetch('http://localhost:8001/attacker/score');
         if (scoreResponse.ok) {
           const scoreData = await scoreResponse.json();
           setUserScore(scoreData);
         }
       } else {
-        // 验证失败设置为不正确
+        // set to incorrect if validation fails
         setIsCorrect(false);
       }
       
-      // 无论成功还是失败都显示对话框
+      // display dialog box regardless of success or failure
       setDialogOpen(true);
     } catch (err) {
-      // 处理网络错误等技术问题
+      // handle network errors and other technical issues
       console.error('Error validating answer:', err);
-      // 标记为技术错误
+      // mark as technical error
       setIsTechnicalError(true);
       setDialogOpen(true);
     } finally {
@@ -234,32 +234,32 @@ export default function AttackPage() {
   const handleCloseDialog = () => {
     setDialogOpen(false);
     
-    // 如果回答正确且完成挑战，导航到下一个挑战或返回列表
+    // if answer is correct and challenge is completed, navigate to next challenge or return to list
     if (isCorrect && completed) {
-      // 隐藏回答UI
+      // hide answer UI
       setShouldHideAnswerUI(true);
       
-      // 如果是final挑战，直接返回到modes页面
+      // if final challenge, directly return to modes page
       if (challengeId === 'final') {
         navigate('/modes');
         return;
       }
       
-      // 找出当前挑战在列表中的位置
+      // find the position of the current challenge in the list
       const currentIndex = allChallenges.findIndex(c => c.id === challengeId);
       
-      // 如果当前是indirect挑战且有下一个挑战
+      // if current is indirect challenge and has next challenge
       if (challengeId === 'indirect' && currentIndex >= 0 && currentIndex < allChallenges.length - 1) {
-        // 检查是否有激活的防御插件
+        // check if there is an activated defense plugin
         const hasActiveDefense = defensePlugins.some(plugin => plugin.info.is_active);
         
         if (hasActiveDefense) {
-          // 如果有激活的防御插件，进入final挑战
+          // if there is an activated defense plugin, enter final challenge
           navigate('/attack/final');
         } else {
-          // 如果没有激活的防御插件，跳转到防御列表页面
+          // if there is no activated defense plugin, jump
           navigate('/modes');
-          // 显示提示消息
+          // display prompt message
           setSnackbar({
             open: true,
             message: 'Please activate at least one defense plugin before proceeding to the final challenge',
@@ -267,11 +267,11 @@ export default function AttackPage() {
           });
         }
       } else if (currentIndex >= 0 && currentIndex < allChallenges.length - 1) {
-        // 其他挑战正常进入下一个
+        // other challenges enter next
         const nextChallenge = allChallenges[currentIndex + 1];
         navigate(`/attack/${nextChallenge.id}`);
       } else {
-        // 如果是最后一个挑战，返回到挑战列表
+        // if last challenge, return to challenge list
         navigate('/modes');
       }
     }
@@ -343,12 +343,12 @@ export default function AttackPage() {
         boxSizing: 'border-box',
       }}
     >
-      {/* 背景渐变圆形装饰 */}
+      {/* background gradient circle decoration */}
       <Box sx={{ position: 'absolute', width: '30vw', height: '30vh', borderRadius: '50%', background: 'radial-gradient(circle,rgb(112, 2, 163), transparent)', top: '10%', left: '5%', filter: 'blur(70px)', zIndex: 0, opacity: 0.4 }} />
       <Box sx={{ position: 'absolute', width: '26vw', height: '20vh', borderRadius: '50%', background: 'radial-gradient(circle,rgb(69, 28, 157), transparent)', top: '10%', right: '10%', filter: 'blur(70px)', zIndex: 0, opacity: 0.3 }} />
       <Box sx={{ position: 'absolute', width: '30vw', height: '30vh', borderRadius: '50%', background: 'radial-gradient(circle,rgb(56, 20, 132), transparent)', bottom: '10%', right: '30%', filter: 'blur(70px)', zIndex: 0, opacity: 0.5 }} />
 
-      {/* 标题部分 */}
+      {/* title section */}
       <Box sx={{ textAlign: 'center', mb: 6, zIndex: 1, position: 'relative', width: '100%', maxWidth: '1200px' }}>
         <IconButton
           onClick={() => navigate('/modes')}
@@ -379,7 +379,7 @@ export default function AttackPage() {
         </Typography>
       </Box>
 
-      {/* 🧩 主卡片 */}
+      {/* main card */}
       <Box
         sx={{
           background: 'rgba(255, 255, 255, 0.03)',
@@ -436,7 +436,7 @@ export default function AttackPage() {
               </Box>
             </Box>
 
-            {/* 👩‍🚀 虚拟角色头像与输入 */}
+            {/* virtual character avatar and input */}
             <Box display="flex" flexDirection="column" alignItems="center" mb={2}>
               <Avatar
                 src="/images/avatar.png"
@@ -450,7 +450,7 @@ export default function AttackPage() {
                     : "Hej, I'm Nicole, ask me a question:"}
               </Typography>
 
-              {/* 文件上传部分 - 仅在indirect_injection挑战中显示 */}
+              {/* file upload section - only show in indirect_injection challenge */}
               {challengeInfo?.type === "indirect_injection" && (
                 <Box 
                   sx={{ 
@@ -607,7 +607,7 @@ export default function AttackPage() {
               />
             </Box>
 
-            {/* 🤖 回复消息气泡 */}
+            {/* response message bubble */}
             {response && (
               <Box
                 sx={{
@@ -647,7 +647,7 @@ export default function AttackPage() {
               </Box>
             )}
 
-            {/* 🔐 答案提交 */}
+            {/* answer submission */}
             {response && (
               <Box display="flex" mt={3} gap={2}>
                 <TextField
@@ -696,7 +696,7 @@ export default function AttackPage() {
           </>
         )}
 
-        {/* 结果对话框 */}
+        {/* result dialog */}
         <Dialog
           open={dialogOpen}
           onClose={handleCloseDialog}

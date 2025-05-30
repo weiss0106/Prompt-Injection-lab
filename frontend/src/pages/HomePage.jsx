@@ -13,12 +13,12 @@ export default function HomePage() {
   const mouseProgressRef = useRef(0);
 
   useEffect(() => {
-    // 从 public 目录加载动画文件
+    // load animation from public directory
     fetch('./animations/cat.json')
       .then(response => response.json())
       .then(data => {
         setAnimationData(data);
-        // 动画数据加载后，我们需要等待下一个渲染周期确保 lottieRef 已经设置
+        // after animation data is loaded, we need to wait for the next render cycle to ensure lottieRef is set
         setTimeout(() => {
           if (lottieRef.current?.animationItem) {
             lottieRef.current.animationItem.goToAndStop(24, true);
@@ -28,7 +28,7 @@ export default function HomePage() {
       })
       .catch(error => console.error('Error loading animation:', error));
 
-    // 清理函数
+    // cleanup function
     return () => {
       if (lottieRef.current?.animationItem) {
         lottieRef.current.animationItem.destroy();
@@ -37,9 +37,9 @@ export default function HomePage() {
         cancelAnimationFrame(autoRotateRef.current);
       }
     };
-  }, []);  // 保持空依赖数组，但确保清理
+  }, []);  // keep empty dependency array, but ensure cleanup
 
-  // 确保组件重新挂载时重新开始自动旋转
+  // ensure component remounts and starts auto-rotation
   useEffect(() => {
     if (animationData && lottieRef.current?.animationItem) {
       startAutoRotation();
@@ -51,7 +51,7 @@ export default function HomePage() {
     };
   }, [animationData]);
 
-  // 在组件卸载时停止所有动画
+  // stop all animations when component unmounts
   useEffect(() => {
     return () => {
       if (lottieRef.current?.animationItem) {
@@ -73,16 +73,16 @@ export default function HomePage() {
         const totalFrames = lottieRef.current.animationItem.totalFrames;
         const currentFrame = lottieRef.current.animationItem.currentFrame;
         
-        // 基础旋转速度（0.2倍速）
-        const baseRotationSpeed = 0.2 * deltaTime / 16.67; // 16.67ms 是在 60fps 下的一帧时间
+        // base rotation speed (0.2x speed)
+        const baseRotationSpeed = 0.2 * deltaTime / 16.67; // 16.67ms is the time for one frame in 60fps
         
-        // 结合鼠标接近效果的额外速度
+        // additional speed based on mouse proximity
         const mouseSpeedBoost = mouseProgressRef.current * 2; // 鼠标接近时最多增加2倍速
         
-        // 计算下一帧
+        // calculate next frame
         let nextFrame = currentFrame + baseRotationSpeed * (1 + mouseSpeedBoost);
         
-        // 自然循环：如果超过总帧数，减去总帧数继续从头播放
+        // natural loop: if exceeds total frames, subtract total frames and continue from the beginning
         if (nextFrame >= totalFrames) {
           nextFrame = nextFrame - totalFrames;
         }
@@ -101,24 +101,24 @@ export default function HomePage() {
 
     const container = containerRef.current;
     
-    // Get container dimensions and position
+    // get container dimensions and position
     const rect = container.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     
-    // Calculate distance from mouse to container center
+    // calculate distance from mouse to container center
     const deltaX = e.clientX - centerX;
     const deltaY = e.clientY - centerY;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     
-    // Maximum distance to consider (in pixels)
+    // maximum distance to consider (in pixels)
     const maxDistance = 800;
     
-    // Calculate progress based on distance (closer = higher progress)
+    // calculate progress based on distance (closer = higher progress)
     let progress = 1 - Math.min(distance / maxDistance, 1);
-    progress = Math.pow(progress, 1.5); // 让过渡更平滑
+    progress = Math.pow(progress, 1.5); // make transition smoother
     
-    // 更新鼠标进度引用值
+    // update mouse progress reference value
     mouseProgressRef.current = progress;
   };
 
@@ -144,7 +144,7 @@ export default function HomePage() {
       }}
       onMouseMove={handleMouseMove}
     >
-      {/* 背景装饰圆形 */}
+      {/* background decorative circle */}
       <Box
         sx={{
           position: 'absolute',
@@ -194,7 +194,7 @@ export default function HomePage() {
         }}
       />
 
-      {/* 🧢 页面顶部标题部分 */}
+      {/* 🧢 page top title */}
       <Box sx={{ textAlign: 'center', mb: 8, zIndex: 1 }}>
         <Typography
           variant="h1"
@@ -210,7 +210,7 @@ export default function HomePage() {
         </Typography>
       </Box>
 
-      {/* 🧊 内容卡片部分（介绍 + 图片） */}
+      {/* 🧊 content card (introduction + image) */}
       <Box
         sx={{
           width: '100%',
@@ -227,7 +227,7 @@ export default function HomePage() {
           zIndex: 1,
         }}
       >
-        {/* 左文字 */}
+        {/* left text */}
         <Box sx={{ flex: 1, pr: { md: 4 }}}>
           <Typography
             variant="h5"
@@ -238,11 +238,11 @@ export default function HomePage() {
           </Typography>
           <Typography paragraph>
             In this lab, you will explore prompt injection through interactive tasks. It takes about 1~2 hours. Your task is divided
-            into 2 parts – attack and defence.
+            into 2 parts – attack and defense.
           </Typography>
           <Typography paragraph>
             In the attack part, your task is to make our AI assistant – Nicole reveal the secret password in each level. Then you will
-            look into the backstage and implement defence strategies to prevent your assistant from being attacked.
+            look into the backstage and implement defense strategies to prevent your assistant from being attacked.
           </Typography>
 
           <Button
@@ -266,7 +266,7 @@ export default function HomePage() {
           </Button>
         </Box>
 
-        {/* 右图像 */}
+        {/* right image */}
         <Box
           ref={containerRef}
           sx={{
