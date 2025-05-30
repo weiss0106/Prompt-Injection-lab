@@ -1,1 +1,1 @@
-{"KeywordFilter": {"is_active": true, "description": "Filter out keywords in the prompt"}, "OutputFilter": {"is_active": false, "description": "Custom output filtering defense"}}
+{"KeywordFilter": {"is_active": false, "description": "Filter out keywords in the prompt"}, "OutputFilter": {"is_active": false, "description": "Custom output filtering defense"}}
