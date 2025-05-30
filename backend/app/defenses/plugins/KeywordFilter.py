@@ -15,6 +15,7 @@ class KeywordFilterDefense(DefensePlugin):
         
     def process_prompt(self,prompt:str) -> str:
         if not self.is_active:
+            print(f"DEBUG: KeywordFilter is not active")
             return prompt
         
         for keyword in self.config["blocked_keywords"]:

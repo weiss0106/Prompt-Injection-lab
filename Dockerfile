@@ -36,6 +36,16 @@ COPY --from=frontend-build /app/frontend/dist /app/frontend_dist
 # Copy nginx config
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
+# Create wait-for-backend.sh script
+RUN echo '#!/bin/sh\n\
+echo "Waiting for backend..."\n\
+while ! nc -z backend 8001; do\n\
+  sleep 1\n\
+done\n\
+echo "Backend is up!"\n\
+nginx -g "daemon off;"' > /app/wait-for-backend.sh && \
+chmod +x /app/wait-for-backend.sh
+
 # Install Python dependencies
 WORKDIR /app/backend
 RUN pip install --no-cache-dir -r requirements.txt
@@ -43,4 +53,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Expose ports for backend and frontend
 EXPOSE 8001 5174
 
-# Entrypoint will be set by docker-compose 
+# Set the entrypoint
+ENTRYPOINT ["/app/wait-for-backend.sh"]

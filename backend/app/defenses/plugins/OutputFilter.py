@@ -7,7 +7,7 @@ class OutputFilter(DefensePlugin):
         self.description = "Custom output filtering defense"
         self.defense_type = DefenseType.OUTPUT_FILTERING
         self.config = {
-            "sensitive_patterns": ["secret", "key", "password"]
+            "sensitive_patterns": ["secret", "key", "password","FINAL_VICTORY"]
         }
 
     def process_prompt(self, prompt: str) -> str:
@@ -18,6 +18,7 @@ class OutputFilter(DefensePlugin):
 
     def process_output(self, output: str) -> str:
         if not self.is_active:
+            print("DEBUG: OutputFilter is not active")
             return output
             
         for pattern in self.config["sensitive_patterns"]:
